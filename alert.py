@@ -31,10 +31,22 @@ class Alert(object):
         # 等待1秒
         time.sleep(1)
         # ocr 截取指定区域图片，解析图片中文本内容
-        pyautogui.screenshot(f'pic/{code}.png', region=(1367, 54, 450, 30))
-        pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 910, 1400, 30))
-        price1, price2 ,price3 = self.catch_image_for_price(code)
+        pyautogui.screenshot(f'pic/{code}.png', region=(1175, 42, 450, 30))
+        pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
 
+        max_attempts = 3
+        attempt = 1
+        while attempt <= max_attempts:
+            price1, price2 ,price3 = self.catch_image_for_price(code)
+            if price1 != 0 and re.match(r"\d+\.\d{2}$", str(price1)) and price2 != 0 and re.match(r"\d+\.\d{2}$", str(price2)) and price3 != 0 and re.match(r"\d+\.\d{2}$", str(price3)):
+                break
+            attempt += 1
+        if price1 == None:
+            price1 = 0
+        if price2 == None:
+            price2 = 0
+        if price3 == None:
+            price3 = 0
         return price1, price2,price3
 
     # 解析图片
@@ -44,9 +56,9 @@ class Alert(object):
         try:
             result = reader.readtext(f'pic/{code}.png')
             # 使用正则表达式匹配冒号后的数值
-            matches = re.findall(r'(\w+):([\d.]+)', result[0][1])
+            matches = re.findall(r'(\w+):([\d+\.\d+]+)', result[0][1])
             # 构建字典，按照元组的第一个元素作为键，第二个元素作为值
-            result = {key: float(value) for key, value in matches}
+            result = {key: value for key, value in matches}
             # 打印紫实线和灰下的数值
             v1 = result.get('紫实线')
             v2 = result.get('灰上')
