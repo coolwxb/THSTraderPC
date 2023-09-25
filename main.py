@@ -53,18 +53,8 @@ def watch_file(path):
                 continue
             else:
                 print(f"{parsed_code}是近期热门异动板块概念")
-
-                max_attempts = 3
-                attempt = 1
-                price1 = 0
-
-                while attempt <= max_attempts:
-                    price1, price2,price3  = alert.Alert().purple_price(parsed_code)
-                    if price1 != 0 and re.match(r"\d+\.\d{2}$", str(price1)):
-                        break
-                    attempt += 1
-
-                if price1 == 0:
+                price1, price2,price3  = alert.Alert().purple_price(parsed_code)
+                if price1 == 0 and price2==0 and price3==0:
                     # 超过最大尝试次数仍未获取到非零的price1
                     # 在这里处理相应逻辑
                     print(f"获取{parsed_code}的紫色线价格失败")
@@ -73,11 +63,11 @@ def watch_file(path):
                     # 判断当前价格是否小于紫色线价格
                     t = ths.Ths()
                     current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
-                    if current <= price3:
+                    if current <= price3 and price3!=0:
                         print(f"{parsed_code} 跌破灰色下价格，不买入")
-                    elif current < price1 and current > price2:
+                    elif current < price1 and current > price2 and price1!=0 and price2!=0:
                         t.buy(parsed_code, price2)
-                    elif current < price2:
+                    elif current < price2 and price2!=0:
                         t.buy(parsed_code, current)
                     else:
                         t.buy(parsed_code,price1)

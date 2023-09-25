@@ -6,6 +6,7 @@ import easyocr
 from pywinauto import keyboard
 from pywinauto import findwindows
 import re
+import baidu_ocr
 
 
 class Alert(object):
@@ -52,26 +53,36 @@ class Alert(object):
     # 解析图片
     def catch_image_for_price(self, code):
         # 使用easyocr 识别图片中文本内容
-        reader = easyocr.Reader(['ch_sim', 'en'])
+        # reader = easyocr.Reader(['ch_sim', 'en'])
         try:
-            result = reader.readtext(f'pic/{code}.png')
+            # result = reader.readtext(f'pic/{code}.png')
+            # matches = re.findall(r'([\u4e00-\u9fa5]+)：([\d.]+)', result[0][1])
+            # print(matches)
+
+            payload = baidu_ocr.get_file_content_as_base64(f'pic/{code}.png',True)
+            response = baidu_ocr.baidu_ocr(payload)
             # 使用正则表达式匹配冒号后的数值
-            matches = re.findall(r'(\w+):([\d+\.\d+]+)', result[0][1])
-            # 构建字典，按照元组的第一个元素作为键，第二个元素作为值
-            result = {key: value for key, value in matches}
-            # 打印紫实线和灰下的数值
-            v1 = result.get('紫实线')
-            v2 = result.get('灰上')
-            v3 = result.get('灰下')
-            print(f'{code},紫实线：{v1}，灰上：{v2},灰下：{v3}')
-            if v1==None:
-                v1 = 0
-            if v2==None:
-                v2 = 0
-            if v3==None:
-                v3 = 0
-            # 返回紫实线的数值
-            return v1,v2,v3
+            if "words_result" in response and len(response["words_result"])>0 :
+                if "words" in response["words_result"][0]:
+                    p = response["words_result"][0]['words']
+                    matches = re.findall(r'(\w+)：([\d+\.\d+]+)',p)
+                    # 构建字典，按照元组的第一个元素作为键，第二个元素作为值
+                    result = {key: value for key, value in matches}
+                    # 打印紫实线和灰下的数值
+                    v1 = result.get('紫实线')
+                    v2 = result.get('灰上')
+                    v3 = result.get('灰下')
+                    print(f'{code},紫实线：{v1}，灰上：{v2},灰下：{v3}')
+                    if v1==None:
+                        v1 = 0
+                    if v2==None:
+                        v2 = 0
+                    if v3==None:
+                        v3 = 0
+                    # 返回紫实线的数值
+                    return float(v1),float(v2),float(v3)
+            if "error_msg" in response:
+                print(f"百度识别ocr报错： {response['error_msg']}")
         except Exception as e:
             print(e)
             return 0,0,0
