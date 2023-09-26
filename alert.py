@@ -39,15 +39,31 @@ class Alert(object):
         attempt = 1
         while attempt <= max_attempts:
             price1, price2 ,price3 = self.catch_image_for_price(code)
-            if price1 != 0 and re.match(r"\d+\.\d{2}$", str(price1)) and price2 != 0 and re.match(r"\d+\.\d{2}$", str(price2)) and price3 != 0 and re.match(r"\d+\.\d{2}$", str(price3)):
+            if price1 != 0:
                 break
             attempt += 1
         if price1 == None:
-            price1 = 0
+            if price2>0:
+                price1 = price2
+            elif price3>0:
+                price1 = price3
+            else:
+                price1 = 0
         if price2 == None:
-            price2 = 0
+            if price3 > 0:
+                price2 = price3
+            elif price1>0:
+                price2 = price1
+            else:
+                price2 = 0
         if price3 == None:
-            price3 = 0
+            if price2 > 0:
+                price3 = price2
+            elif price1 > 0:
+                price3 = price1
+            else:
+                price3 = 0
+
         return price1, price2,price3
 
     # 解析图片
