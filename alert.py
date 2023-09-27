@@ -7,7 +7,7 @@ from pywinauto import keyboard
 from pywinauto import findwindows
 import re
 import baidu_ocr
-
+from PIL import Image
 
 class Alert(object):
     '''
@@ -32,9 +32,10 @@ class Alert(object):
         # 等待1秒
         time.sleep(1)
         # ocr 截取指定区域图片，解析图片中文本内容
-        pyautogui.screenshot(f'pic/{code}.png', region=(1175, 42, 450, 30))
-        pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
-
+        p1 = pyautogui.screenshot(f'pic/{code}.png', region=(1175, 42, 450, 30))
+        self.scalePic(p1,f'pic/{code}.png')
+        p2 = pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
+        self.scalePic(p2, f'pic/{code}-concept.png')
         max_attempts = 3
         attempt = 1
         while attempt <= max_attempts:
@@ -65,7 +66,18 @@ class Alert(object):
                 price3 = 0
 
         return price1, price2,price3
-
+    def scalePic(self,pic,path):
+        # 指定放大倍数
+        scale_factor = 3  # 2倍放大，可以根据需要调整
+        # 获取截图的宽度和高度
+        width, height = pic.size
+        # 计算放大后的宽度和高度
+        new_width = width * scale_factor
+        new_height = height * scale_factor
+        # 使用PIL库对截图进行放大
+        screenshot = pic.resize((new_width, new_height), resample=Image.BILINEAR)
+        # 保存放大后的截图
+        screenshot.save(path)
     # 解析图片
     def catch_image_for_price(self, code):
         # 使用easyocr 识别图片中文本内容
