@@ -7,7 +7,7 @@ from pywinauto import keyboard
 from pywinauto import findwindows
 import re
 import baidu_ocr
-from PIL import Image
+
 
 class Alert(object):
     '''
@@ -33,9 +33,9 @@ class Alert(object):
         time.sleep(1)
         # ocr 截取指定区域图片，解析图片中文本内容
         p1 = pyautogui.screenshot(f'pic/{code}.png', region=(1175, 42, 450, 30))
-        self.scalePic(p1,f'pic/{code}.png')
+        # self.scalePic(p1,f'pic/{code}.png')
         p2 = pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
-        self.scalePic(p2, f'pic/{code}-concept.png')
+        # self.scalePic(p2, f'pic/{code}-concept.png')
         max_attempts = 3
         attempt = 1
         while attempt <= max_attempts:
@@ -66,18 +66,24 @@ class Alert(object):
                 price3 = 0
 
         return price1, price2,price3
-    def scalePic(self,pic,path):
-        # 指定放大倍数
-        scale_factor = 3  # 2倍放大，可以根据需要调整
-        # 获取截图的宽度和高度
-        width, height = pic.size
-        # 计算放大后的宽度和高度
-        new_width = width * scale_factor
-        new_height = height * scale_factor
-        # 使用PIL库对截图进行放大
-        screenshot = pic.resize((new_width, new_height), resample=Image.BILINEAR)
-        # 保存放大后的截图
-        screenshot.save(path)
+    # def scalePic(self,pic,path):
+    #     # 指定放大倍数
+    #     scale_factor = 2  # 2倍放大，可以根据需要调整
+    #     # 获取截图的宽度和高度
+    #     width, height = pic.size
+    #     # 计算放大后的宽度和高度
+    #     new_width = width * scale_factor
+    #     new_height = height * scale_factor
+    #     # 使用PIL库对截图进行放大
+    #     screenshot = pic.resize((new_width, new_height), resample=Image.BILINEAR)
+    #     enhancer = ImageEnhance.Sharpness(screenshot)
+    #     factor = 2.0
+    #
+    #     # 增强图片
+    #     img_enhanced = enhancer.enhance(factor)
+    #
+    #     # 保存放大后的截图
+    #     img_enhanced.save(path)
     # 解析图片
     def catch_image_for_price(self, code):
         # 使用easyocr 识别图片中文本内容
@@ -96,10 +102,18 @@ class Alert(object):
                     matches = re.findall(r'(\w+)：([\d+\.\d+]+)',p)
                     # 构建字典，按照元组的第一个元素作为键，第二个元素作为值
                     result = {key: value for key, value in matches}
-                    # 打印紫实线和灰下的数值
-                    v1 = result.get('紫实线')
-                    v2 = result.get('灰上')
-                    v3 = result.get('灰下')
+                    v1 = 0
+                    v2 = 0
+                    v3 = 0
+                    # 遍历result
+                    for k in result:
+                        if "紫实线" in k:
+                            v1 = result.get(k)
+                        elif "灰上" in k:
+                            v2 = result.get(k)
+                        elif "灰下" in k:
+                            v3 = result.get(k)
+
                     print(f'{code},紫实线：{v1}，灰上：{v2},灰下：{v3}')
                     if v1==None:
                         v1 = 0
