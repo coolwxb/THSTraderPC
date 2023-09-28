@@ -2,8 +2,8 @@ import base64
 import urllib
 import requests
 
-API_KEY = "G2Y3k7G8k3vsndpaV53mpBzp"
-SECRET_KEY = "u1OZ3tFrfFgw7Fc2OfO1VtkhWCZuKUlG"
+API_KEY = "0vEcoAefNdPmGBp5t5PDhVvB"
+SECRET_KEY = "5Xr3mN9csvcljsFUvsZE1gpjc8HNrptD"
 
 
 def baidu_ocr(payload):
