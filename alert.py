@@ -32,16 +32,20 @@ class Alert(object):
         # 等待1秒
         time.sleep(1)
         # ocr 截取指定区域图片，解析图片中文本内容
-        p1 = pyautogui.screenshot(f'pic/{code}.png', region=(1175, 42, 450, 30))
+        p1 = pyautogui.screenshot(f'pic/{code}.png', region=(1055, 42, 450, 30))
         # self.scalePic(p1,f'pic/{code}.png')
         p2 = pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
         # self.scalePic(p2, f'pic/{code}-concept.png')
         max_attempts = 3
         attempt = 1
         while attempt <= max_attempts:
-            price1, price2 ,price3 = self.catch_image_for_price(code)
+            price1, price2 ,price3 = self.catch_image_for_price_local(code)
             if price1 != 0:
                 break
+            else:
+                price1, price2, price3 = self.catch_image_for_price_api(code)
+                if price1 != 0:
+                    break
             attempt += 1
         if price1 == None:
             if price2>0:
@@ -74,7 +78,7 @@ class Alert(object):
     #     # 计算放大后的宽度和高度
     #     new_width = width * scale_factor
     #     new_height = height * scale_factor
-    #     # 使用PIL库对截图进行放大
+    #     #
     #     screenshot = pic.resize((new_width, new_height), resample=Image.BILINEAR)
     #     enhancer = ImageEnhance.Sharpness(screenshot)
     #     factor = 2.0
@@ -85,7 +89,7 @@ class Alert(object):
     #     # 保存放大后的截图
     #     img_enhanced.save(path)
     # 解析图片
-    def catch_image_for_price(self, code):
+    def catch_image_for_price_api(self, code):
         # 使用easyocr 识别图片中文本内容
         # reader = easyocr.Reader(['ch_sim', 'en'])
         try:
@@ -95,10 +99,15 @@ class Alert(object):
 
             payload = baidu_ocr.get_file_content_as_base64(f'pic/{code}.png',True)
             response = baidu_ocr.baidu_ocr(payload)
+            if "error_code" in response:
+                print(response["error_msg"])
+                return 0,0,0
             # 使用正则表达式匹配冒号后的数值
             if "words_result" in response and len(response["words_result"])>0 :
-                if "words" in response["words_result"][0]:
-                    p = response["words_result"][0]['words']
+                for dic in  response["words_result"]:
+
+                 if "words" in dic:
+                    p = dic['words']
                     matches = re.findall(r'(\w+)：([\d+\.\d+]+)',p)
                     # 构建字典，按照元组的第一个元素作为键，第二个元素作为值
                     result = {key: value for key, value in matches}
@@ -125,6 +134,41 @@ class Alert(object):
                     return float(v1),float(v2),float(v3)
             if "error_msg" in response:
                 print(f"百度识别ocr报错： {response['error_msg']}")
+        except Exception as e:
+            print(e)
+            return 0,0,0
+    def catch_image_for_price_local(self, code):
+        # 使用easyocr 识别图片中文本内容
+        reader = easyocr.Reader(['ch_sim', 'en'])
+        try:
+            result = reader.readtext(f'pic/{code}.png')
+            pattern = r"(?P<key>[\u4e00-\u9fa5a-zA-Z]+)[:：]\s*(?P<value>\d+(?:\.\d+)?)"
+            # 使用正则表达式匹配冒号后的数值
+            matches = re.findall(pattern, result[0][1])
+            # 构建字典，按照元组的第一个元素作为键，第二个元素作为值
+            dic = {key: value for key, value in matches}
+            # 打印紫实线和灰下的数值
+            v1 = 0
+            v2 = 0
+            v3 = 0
+            # 遍历result
+            for k in dic:
+                if "紫实线" in k:
+                    v1 = dic.get(k)
+                elif "灰上" in k:
+                    v2 = dic.get(k)
+                elif "灰下" in k:
+                    v3 = dic.get(k)
+
+            print(f'{code},紫实线：{v1}，灰上：{v2},灰下：{v3}')
+            if v1 == None:
+                v1 = 0
+            if v2 == None:
+                v2 = 0
+            if v3 == None:
+                v3 = 0
+            # 返回紫实线的数值
+            return float(v1), float(v2), float(v3)
         except Exception as e:
             print(e)
             return 0,0,0

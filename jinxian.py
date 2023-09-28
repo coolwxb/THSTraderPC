@@ -49,11 +49,11 @@ def record_start():
         while attempt <= max_attempts:
             # 统计每个金线股的紫色线价格
             price1, price2, price3 = alert.Alert().purple_price(code)
-            if price1 != 0 and re.match(r"\d+\.\d{2}$", str(price1)):
+            if price1 != 0:
                 break
             attempt += 1
 
-        if price1 == 0 or not re.match(r"\d+\.\d{2}$", str(price1)):
+        if price1 == 0:
             # 超过最大尝试次数仍未获取到非零的price1
             # 在这里处理相应逻辑
             print(f"获取{code}的紫色线价格失败")
@@ -144,8 +144,12 @@ def record_end():
     for code in codes:
         # akshare 获取股票价格
         today = datetime.now().strftime("%Y%m%d")
-        allTicketdf = ak.stock_zh_a_hist(symbol=code, period="daily", start_date=today,
+        try:
+            allTicketdf = ak.stock_zh_a_hist(symbol=code, period="daily", start_date=today,
                                          end_date=today, adjust="qfq")
+        except Exception as e:
+            print(e)
+            continue
         shoupanjia = allTicketdf.at[0, '收盘']
         zuidijia = allTicketdf.at[0, '最低']
         zuigao = allTicketdf.at[0, '最高']
