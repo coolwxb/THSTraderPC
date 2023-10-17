@@ -12,35 +12,35 @@ class Jiaogedan(object):
 
     #记录已经买入的code
     def record_buy(self,code):
-        with open(self.__buy_path, 'a') as f:
+        with open(self.__buy_path, 'a',encoding="utf-8") as f:
             f.write(code)
             f.write('\n')
     # 记录已经卖出的code
     def record_sell(self,code):
-        with open(self.__sell_path, 'a') as f:
+        with open(self.__sell_path, 'a',encoding="utf-8") as f:
             f.write(code)
             f.write('\n')
     # 判断是否已经买入
     def is_buyed(self,code):
-        with open(self.__buy_path, 'r') as f:
+        with open(self.__buy_path, 'r',encoding="utf-8") as f:
             for line in f.readlines():
                 if code in line:
                     return True
         return False
     # 判断是否已经卖出
     def is_selled(self,code):
-        with open(self.__sell_path, 'r') as f:
+        with open(self.__sell_path, 'r',encoding="utf-8") as f:
             for line in f.readlines():
                 if code in line:
                     return True
         return False
     # 清空买入记录
     def clear_buy(self):
-        with open(self.__buy_path, 'w') as f:
+        with open(self.__buy_path, 'w',encoding="utf-8") as f:
             f.write('')
     # 清空卖出记录
     def clear_sell(self):
-        with open(self.__sell_path, 'w') as f:
+        with open(self.__sell_path, 'w',encoding="utf-8") as f:
             f.write('')
     # 清空所有记录
     def clear_all(self):

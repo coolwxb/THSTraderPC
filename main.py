@@ -23,6 +23,10 @@ def parse_content(content):
 
 # 监听文件变化的方法
 def watch_file(path):
+    if not os.path.exists(path):
+        # 文件不存在，创建文件
+        with open(path, 'w',encoding="utf-8") as file:
+            pass
     file = open(path)
     while True:
         where = file.tell()
@@ -85,7 +89,8 @@ if __name__ == '__main__':
     recentIndustryConceptList = f.read().splitlines()
     f.close()
 
-    # 启动文件监听
+    # 启动文件监听3286
+
     watch_file('预警.txt')
 
     # 每日下午三点半执行方法

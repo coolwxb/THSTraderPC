@@ -28,13 +28,20 @@ class Jinxian():
 
 dic = {}
 
-
+def read_codes(file_path):
+    values = []
+    with open(file_path, 'r',encoding='utf-8') as file:
+        for line in file:
+            value = line.strip().split()[0]
+            values.append(value)
+    return values
 # 开盘前记录金线股价格
 def record_start():
     # 读取code.txt文件，将每行的内容组成数组
-    f = open("code.txt")
-    codes = f.read().splitlines()
-    f.close()
+    # f = open("code.txt")
+    # codes = f.read().splitlines()
+    # f.close()
+    codes = read_codes("code.txt")
 
     df = pd.read_excel('股票行业、板块信息.xlsx', converters={'代码': str})
     conceptMap = df.set_index('代码').T.to_dict()
@@ -140,9 +147,7 @@ def record_start():
 # 收盘后记录金线股价格
 def record_end():
     # 读取金线股信息
-    f = open("code.txt")
-    codes = f.read().splitlines()
-    f.close()
+    codes = read_codes("code.txt")
     df = pd.read_excel('金线股.xlsx', converters={'代码': str})
     dic = df.set_index('代码').T.to_dict()
     for code in codes:
@@ -228,8 +233,9 @@ def record_end():
 
 
 if __name__ == '__main__':
-    record_start()
-    # record_end()
+    # record_start()
+    record_end()
+
     # datetime.strftime("%Y%m%d")
     # print(datetime.now().strftime("%Y%m%d"))
 
