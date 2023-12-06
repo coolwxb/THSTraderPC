@@ -82,8 +82,6 @@ class Ths(object):
             # 获取股票可用余额
             available = item['可用余额']
             if available > 0:
-                # 获取股票的紫色线价格
-                price1, price2, price3 = alert.Alert().purple_price(item['证券代码'])
                 # 判断股票盈亏比例（%） 大于3%卖出
                 if item['盈亏比例(%)'] > 3:
                     # 获取股票代码
@@ -153,7 +151,7 @@ def weituo(self):
 def quxiao(self):
     self.user.refresh()
     self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-    po = self.user.cancel_entrust()
+    po = self.user.cancel_all_entrusts()
     print(f"取消所有委托：{po}")
 
 # 获取当日成交

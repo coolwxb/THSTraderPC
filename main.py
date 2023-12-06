@@ -46,13 +46,14 @@ def watch_file(path):
     file = open(path)
     while True:
         # 示例使用
-        if is_time_to_sell(14,51):
+        if is_time_to_sell(14,50):
             # 执行卖出操作
             print("当前时间是下午2点50分，执行卖出操作")
             ths.Ths().sell()
             return
         elif is_time_to_sell(9,25):
             # 执行开盘卖出策略
+            print("当前时间是下午9点25分，执行卖出操作")
             ths.Ths().open_sell()
 
         where = file.tell()
@@ -120,7 +121,7 @@ if __name__ == '__main__':
     try:
         watch_file('预警.txt')
     except Exception:
-        send_msg_to_dingtalk("python监听", "出错了")
+        send_msg_to_dingtalk("股票交易自动停止了", "出错了")
         # send_msg_to_dingtalk("监听报错退出了")
 
     # 每日下午三点半执行方法
