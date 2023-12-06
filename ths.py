@@ -43,15 +43,13 @@ class Ths(object):
         # 每股股票的价格和每份股票的数量
         stock_price = price
         shares_per_purchase = 100
-
         # 分割总资产为10等份，并计算每份的金额
-        purchase_amount = total_assets / 10
-
+        purchase_amount = total_assets / 20
         # 确保每次购买的股票金额不超过资金余额
         purchase_amount = min(purchase_amount, available_funds)
-
         # 计算每次购买的股票数量
         shares_to_purchase = int(purchase_amount / stock_price / shares_per_purchase) * shares_per_purchase
+        # shares_to_purchase = 100
         # 打印购买的股票数量和金额
         print(f"购买股票数量: {shares_to_purchase}")
         print(f"购买股票金额: {shares_to_purchase * stock_price}")
@@ -79,7 +77,7 @@ class Ths(object):
             available = item['可用余额']
             if available > 0:
                 # 获取股票的紫色线价格
-                price1,price2 = alert.Alert().purple_price(item['证券代码'])
+                price1,price2,price3 = alert.Alert().purple_price(item['证券代码'])
                 # 判断股票盈亏比例（%） 大于3%卖出
                 if item['盈亏比例(%)'] > 3:
                     # 获取股票代码
@@ -125,5 +123,18 @@ class Ths(object):
         po = self.user.deal
         print(f"当日成交：{po}")
 
+    def calculate_buying_fee(self,price, quantity):
+        # 计算买入手续费
+        commission_rate = 0.0003  # 佣金费率
+        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
+        return commission
+
+    def calculate_selling_fee(self,price, quantity):
+        # 计算卖出手续费
+        commission_rate = 0.0003  # 佣金费率
+        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
+        tax_rate = 0.001  # 印花税费率
+        tax = price * quantity * tax_rate  # 印花税
+        return commission + tax
 if __name__ == '__main__':
-    Ths().chicang()
+    Ths().sell()

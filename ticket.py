@@ -111,4 +111,5 @@ class TicketDetailInfo(object):
 
 
 if __name__ == '__main__':
-    print(TicketInfo().get_realtime_ticket_info("603096"))
+    # print(TicketInfo().get_realtime_ticket_info("603096"))
+    TicketInfo().export_industry_concept_xlsx()

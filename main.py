@@ -1,7 +1,9 @@
 import os
 import sched
 import time
-from datetime import datetime
+import datetime
+
+import requests
 
 import alert
 import ths
@@ -21,6 +23,20 @@ def parse_content(content):
     stock_code = columns[0]
     return stock_code
 
+# 判断时间
+def is_time_to_sell():
+    current_time = datetime.datetime.now().time()
+    target_time = datetime.time(14, 51)  # 目标时间下午2点50分
+    if current_time.hour == target_time.hour and current_time.minute == target_time.minute:
+        return True
+    else:
+        return False
+
+# 向钉钉发送消息
+def send_msg_to_dingtalk(title,content):
+    # 钉钉机器人的Webhook地址，需要替换为实际地址
+    webhook = "https://sctapi.ftqq.com/SCT231940TOqVp5vSDXB0FR6gsLJ1OKqDW.send?title="+title+"&desp="+content
+    requests.get(url=webhook)
 # 监听文件变化的方法
 def watch_file(path):
     if not os.path.exists(path):
@@ -29,6 +45,13 @@ def watch_file(path):
             pass
     file = open(path)
     while True:
+        # 示例使用
+        if is_time_to_sell():
+            # 执行卖出操作
+            print("当前时间是下午2点50分，执行卖出操作")
+            ths.Ths().sell()
+            return
+
         where = file.tell()
         line = file.readline()
         if not line:
@@ -40,23 +63,23 @@ def watch_file(path):
 
             # 根据优化策略判断是否买入股票
             # 1、是近期7天热门异动板块概念
-            flag = False
-            for industry in recentIndustryConceptList:
-                if parsed_code in conceptMap:
-                    if industry in conceptMap[parsed_code]['行业']:
-                        flag = True
-                        break
-            if not flag:
-                for concept in recentIndustryConceptList:
-                    if parsed_code in conceptMap:
-                        if concept in conceptMap[parsed_code]['概念']:
-                            flag = True
-                            break
+            flag = True
+            # for industry in recentIndustryConceptList:
+            #     if parsed_code in conceptMap:
+            #         if industry in conceptMap[parsed_code]['行业']:
+            #             flag = True
+            #             break
+            # if not flag:
+            #     for concept in recentIndustryConceptList:
+            #         if parsed_code in conceptMap:
+            #             if concept in conceptMap[parsed_code]['概念']:
+            #                 flag = True
+            #                 break
             if not flag:
                 print(f"{parsed_code}不是近期热门异动板块概念")
                 continue
             else:
-                print(f"{parsed_code}是近期热门异动板块概念")
+                # print(f"{parsed_code}是近期热门异动板块概念")
                 price1, price2,price3  = alert.Alert().purple_price(parsed_code)
                 if price1 == 0 and price2==0 and price3==0:
                     # 超过最大尝试次数仍未获取到非零的price1
@@ -85,13 +108,17 @@ if __name__ == '__main__':
     df = pd.read_excel('股票行业、板块信息.xlsx',converters={'代码': str})
     conceptMap = df.set_index('代码').T.to_dict()
     # 将热点板块信息读取到内存
-    f = open("recent_industry_concept.txt",encoding='utf-8')
-    recentIndustryConceptList = f.read().splitlines()
-    f.close()
+    # f = open("recent_industry_concept.txt",encoding='utf-8')
+    # recentIndustryConceptList = f.read().splitlines()
+    # f.close()
 
-    # 启动文件监听3286
 
-    watch_file('预警.txt')
+
+    try:
+        watch_file('预警.txt')
+    except Exception:
+        send_msg_to_dingtalk("python监听", "出错了")
+        # send_msg_to_dingtalk("监听报错退出了")
 
     # 每日下午三点半执行方法
 
