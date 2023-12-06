@@ -24,9 +24,9 @@ def parse_content(content):
     return stock_code
 
 # 判断时间
-def is_time_to_sell():
+def is_time_to_sell(hour,minute):
     current_time = datetime.datetime.now().time()
-    target_time = datetime.time(14, 51)  # 目标时间下午2点50分
+    target_time = datetime.time(hour, minute)  # 目标时间下午2点50分
     if current_time.hour == target_time.hour and current_time.minute == target_time.minute:
         return True
     else:
@@ -46,11 +46,14 @@ def watch_file(path):
     file = open(path)
     while True:
         # 示例使用
-        if is_time_to_sell():
+        if is_time_to_sell(14,51):
             # 执行卖出操作
             print("当前时间是下午2点50分，执行卖出操作")
             ths.Ths().sell()
             return
+        elif is_time_to_sell(9,25):
+            # 执行开盘卖出策略
+            ths.Ths().open_sell()
 
         where = file.tell()
         line = file.readline()

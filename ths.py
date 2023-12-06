@@ -3,20 +3,21 @@ from jqktrader import grid_strategies
 import jiaogedan
 import alert
 
+
 # 同花顺交易接口封装
 class Ths(object):
     def __init__(self):
         self.user = jqktrader.use()
         self.user.connect(
-          exe_path=r'E:\同花顺软件\同花顺\xiadan.exe',
-          tesseract_cmd=r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+            exe_path=r'E:\同花顺软件\同花顺\xiadan.exe',
+            tesseract_cmd=r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         )
+
     # 单例模式
     def __new__(cls, *args, **kwargs):
         if not hasattr(Ths, "_instance"):
             Ths._instance = object.__new__(cls)
         return Ths._instance
-
 
     # 获取持仓信息
     def chicang(self):
@@ -24,9 +25,10 @@ class Ths(object):
         self.user.grid_strategy = jqktrader.grid_strategies.Xls()
         po = self.user.position
         print(f"持仓信息：{po}")
+
     # 买入
-    def buy(self,code,price):
-        if price<=0:
+    def buy(self, code, price):
+        if price <= 0:
             return
         # 交接单记录买卖code，避免多次买卖
         if jiaogedan.Jiaogedan().is_buyed(code):
@@ -59,13 +61,17 @@ class Ths(object):
                 self.user.buy(code, price, shares_to_purchase)
                 # 记录已经买入的code
                 jiaogedan.Jiaogedan().record_buy(code)
-            except Exception as e :
+            except Exception as e:
                 print(f"买入失败,{code},{e}")
         else:
             print(f"没有足够的资金购买股票,{code}")
 
     # 卖出
     def sell(self):
+        # 取消所有买入卖出委托，重新挂单
+        quxiao(self)
+        # 清空卖出记录
+        jiaogedan.Jiaogedan().clear_sell()
         self.user.refresh()
         self.user.grid_strategy = jqktrader.grid_strategies.Xls()
         po = self.user.position
@@ -77,7 +83,7 @@ class Ths(object):
             available = item['可用余额']
             if available > 0:
                 # 获取股票的紫色线价格
-                price1,price2,price3 = alert.Alert().purple_price(item['证券代码'])
+                price1, price2, price3 = alert.Alert().purple_price(item['证券代码'])
                 # 判断股票盈亏比例（%） 大于3%卖出
                 if item['盈亏比例(%)'] > 3:
                     # 获取股票代码
@@ -91,50 +97,88 @@ class Ths(object):
                         self.user.sell(code, price, shares)
                         jiaogedan.Jiaogedan().record_sell(code)
                 # 判断股票盈亏比例（%） 小于-3%卖出
-                elif item['市价'] < price1:
+                elif item['盈亏比例(%)'] < -3:
                     # 获取股票代码
                     code = item['证券代码']
                     # 获取股票价格
-                    price = item['成本价']
+                    price = item['市价']
                     # 获取股票数量
                     shares = item['可用余额']
                     if not jiaogedan.Jiaogedan().is_selled(code):
                         # 卖出
                         self.user.sell(code, price, shares)
                         jiaogedan.Jiaogedan().record_sell(code)
-
         pass
-    # 获取资金信息
-    def zijin(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.balance
-        print(f"资金信息：{po}")
-    # 获取当日委托
-    def weituo(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.entrust
-        print(f"当日委托：{po}")
-    # 获取当日成交
-    def chengjiao(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.deal
-        print(f"当日成交：{po}")
 
-    def calculate_buying_fee(self,price, quantity):
-        # 计算买入手续费
-        commission_rate = 0.0003  # 佣金费率
-        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
-        return commission
+    # 开盘卖出
+    def open_sell(self):
+        self.user.refresh()
+        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+        po = self.user.position
 
-    def calculate_selling_fee(self,price, quantity):
-        # 计算卖出手续费
-        commission_rate = 0.0003  # 佣金费率
-        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
-        tax_rate = 0.001  # 印花税费率
-        tax = price * quantity * tax_rate  # 印花税
-        return commission + tax
+        print(f"持仓信息：{po}")
+        # 对持仓信息进行遍历
+        for item in po:
+            # 获取股票可用余额
+            available = item['可用余额']
+            # 获取股票价格
+            price = item['市价']
+            # 获取股票价格
+            chengben = item['成本价']
+            if available > 0 and price < chengben:
+                # 获取股票代码
+                code = item['证券代码']
+                # 获取股票数量
+                shares = item['可用余额']
+                if not jiaogedan.Jiaogedan().is_selled(code):
+                    # 卖出
+                    self.user.sell(code, chengben+0.05, shares)
+                    jiaogedan.Jiaogedan().record_sell(code)
+
+# 获取资金信息
+def zijin(self):
+    self.user.refresh()
+    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+    po = self.user.balance
+    print(f"资金信息：{po}")
+
+
+# 获取当日委托
+def weituo(self):
+    self.user.refresh()
+    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+    po = self.user.entrust
+    print(f"当日委托：{po}")
+# 取消所有委托
+def quxiao(self):
+    self.user.refresh()
+    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+    po = self.user.cancel_entrust()
+    print(f"取消所有委托：{po}")
+
+# 获取当日成交
+def chengjiao(self):
+    self.user.refresh()
+    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+    po = self.user.deal
+    print(f"当日成交：{po}")
+
+
+def calculate_buying_fee(self, price, quantity):
+    # 计算买入手续费
+    commission_rate = 0.0003  # 佣金费率
+    commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
+    return commission
+
+
+def calculate_selling_fee(self, price, quantity):
+    # 计算卖出手续费
+    commission_rate = 0.0003  # 佣金费率
+    commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
+    tax_rate = 0.001  # 印花税费率
+    tax = price * quantity * tax_rate  # 印花税
+    return commission + tax
+
+
 if __name__ == '__main__':
     Ths().sell()
