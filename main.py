@@ -45,6 +45,7 @@ def watch_file(path):
             pass
     file = open(path)
     while True:
+
         # 示例使用
         if is_time_to_sell(14,50):
             # 执行卖出操作

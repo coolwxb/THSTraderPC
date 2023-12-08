@@ -123,15 +123,33 @@ class Ths(object):
             price = item['市价']
             # 获取股票价格
             chengben = item['成本价']
-            if available > 0 and price < chengben:
-                # 获取股票代码
-                code = item['证券代码']
-                # 获取股票数量
-                shares = item['可用余额']
+            # 获取股票代码
+            code = item['证券代码']
+            # 获取股票数量
+            shares = item['可用余额']
+            # 亏损 》-3 直接卖
+            if available > 0 and item['盈亏比例(%)']<-3 :
+
                 if not jiaogedan.Jiaogedan().is_selled(code):
                     # 卖出
-                    self.user.sell(code, chengben+0.05, shares)
+                    self.user.sell(code, price, shares)
                     jiaogedan.Jiaogedan().record_sell(code)
+            # 亏损《-3 保本卖
+            elif available > 0 and item['盈亏比例(%)']> -3 and chengben > price:
+
+                if not jiaogedan.Jiaogedan().is_selled(code):
+                    # 卖出
+                    self.user.sell(code, chengben+0.1, shares)
+                    jiaogedan.Jiaogedan().record_sell(code)
+            # 有盈利
+            elif available > 0 and item['盈亏比例(%)'] > 3 :
+                if not jiaogedan.Jiaogedan().is_selled(code):
+                    # 卖出
+                    self.user.sell(code, price, shares)
+                    jiaogedan.Jiaogedan().record_sell(code)
+
+
+
 
 # 获取资金信息
 def zijin(self):
