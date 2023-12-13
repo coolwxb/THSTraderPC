@@ -61,8 +61,9 @@ def watch_file(path):
             ths.Ths().open_sell()
         elif is_time_to_sell(10,55):
             # 执行开盘卖出策略
-            print("当前时间是下午10点55分，取消所有操作")
+            print("当前时间是上午10点55分，取消所有买入操作，重新挂出卖单")
             ths.Ths().quxiao()
+            ths.Ths().open_sell()
 
         where = file.tell()
         line = file.readline()

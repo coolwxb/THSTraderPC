@@ -69,7 +69,7 @@ class Ths(object):
     # 卖出
     def sell(self):
         # 取消所有买入卖出委托，重新挂单
-        quxiao(self)
+        self.quxiao()
         # 清空卖出记录
         jiaogedan.Jiaogedan().clear_sell()
         self.user.refresh()
@@ -149,51 +149,49 @@ class Ths(object):
                     jiaogedan.Jiaogedan().record_sell(code)
 
 
+    # 获取资金信息
+    def zijin(self):
+        self.user.refresh()
+        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+        po = self.user.balance
+        print(f"资金信息：{po}")
 
 
-# 获取资金信息
-def zijin(self):
-    self.user.refresh()
-    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-    po = self.user.balance
-    print(f"资金信息：{po}")
+    # 获取当日委托
+    def weituo(self):
+        self.user.refresh()
+        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+        po = self.user.entrust
+        print(f"当日委托：{po}")
+    # 取消所有委托
+    def quxiao(self):
+        self.user.refresh()
+        # self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+        po = self.user.cancel_all_entrusts()
+        print(f"取消所有委托：{po}")
+
+    # 获取当日成交
+    def chengjiao(self):
+        self.user.refresh()
+        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+        po = self.user.deal
+        print(f"当日成交：{po}")
 
 
-# 获取当日委托
-def weituo(self):
-    self.user.refresh()
-    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-    po = self.user.entrust
-    print(f"当日委托：{po}")
-# 取消所有委托
-def _quxiao(self):
-    self.user.refresh()
-    # self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-    po = self.user.cancel_all_entrusts()
-    print(f"取消所有委托：{po}")
-
-# 获取当日成交
-def chengjiao(self):
-    self.user.refresh()
-    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-    po = self.user.deal
-    print(f"当日成交：{po}")
+    def calculate_buying_fee(self, price, quantity):
+        # 计算买入手续费
+        commission_rate = 0.0003  # 佣金费率
+        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
+        return commission
 
 
-def calculate_buying_fee(self, price, quantity):
-    # 计算买入手续费
-    commission_rate = 0.0003  # 佣金费率
-    commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
-    return commission
-
-
-def calculate_selling_fee(self, price, quantity):
-    # 计算卖出手续费
-    commission_rate = 0.0003  # 佣金费率
-    commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
-    tax_rate = 0.001  # 印花税费率
-    tax = price * quantity * tax_rate  # 印花税
-    return commission + tax
+    def calculate_selling_fee(self, price, quantity):
+        # 计算卖出手续费
+        commission_rate = 0.0003  # 佣金费率
+        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
+        tax_rate = 0.001  # 印花税费率
+        tax = price * quantity * tax_rate  # 印花税
+        return commission + tax
 
 
 if __name__ == '__main__':
