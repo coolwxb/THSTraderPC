@@ -11,6 +11,7 @@ import pandas as pd
 import re
 
 import ticket
+import jiaogedan as jg
 
 conceptMap = {} # 概念
 # 近期热门行业
@@ -47,15 +48,21 @@ def watch_file(path):
     while True:
 
         # 示例使用
-        if is_time_to_sell(14,50):
+        if is_time_to_sell(14,52):
             # 执行卖出操作
             print("当前时间是下午2点50分，执行卖出操作")
             ths.Ths().sell()
+            # 清空购买记录
+            jg.Jiaogedan().clear_all()
             return
         elif is_time_to_sell(9,25):
             # 执行开盘卖出策略
             print("当前时间是下午9点25分，执行卖出操作")
             ths.Ths().open_sell()
+        elif is_time_to_sell(10,55):
+            # 执行开盘卖出策略
+            print("当前时间是下午10点55分，取消所有操作")
+            ths.Ths().quxiao()
 
         where = file.tell()
         line = file.readline()
@@ -116,8 +123,6 @@ if __name__ == '__main__':
     # f = open("recent_industry_concept.txt",encoding='utf-8')
     # recentIndustryConceptList = f.read().splitlines()
     # f.close()
-
-
 
     try:
         watch_file('预警.txt')

@@ -166,9 +166,9 @@ def weituo(self):
     po = self.user.entrust
     print(f"当日委托：{po}")
 # 取消所有委托
-def quxiao(self):
+def _quxiao(self):
     self.user.refresh()
-    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+    # self.user.grid_strategy = jqktrader.grid_strategies.Xls()
     po = self.user.cancel_all_entrusts()
     print(f"取消所有委托：{po}")
 
