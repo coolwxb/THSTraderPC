@@ -106,10 +106,6 @@ class TicketDetailInfo(object):
         self.__concept.append(value)
 
 
-
-
-
-
 if __name__ == '__main__':
     # print(TicketInfo().get_realtime_ticket_info("603096"))
     TicketInfo().export_industry_concept_xlsx()

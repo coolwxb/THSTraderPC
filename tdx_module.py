@@ -70,24 +70,6 @@ class Alert(object):
                 price3 = 0
 
         return price1, price2,price3
-    # def scalePic(self,pic,path):
-    #     # 指定放大倍数
-    #     scale_factor = 2  # 2倍放大，可以根据需要调整
-    #     # 获取截图的宽度和高度
-    #     width, height = pic.size
-    #     # 计算放大后的宽度和高度
-    #     new_width = width * scale_factor
-    #     new_height = height * scale_factor
-    #     #
-    #     screenshot = pic.resize((new_width, new_height), resample=Image.BILINEAR)
-    #     enhancer = ImageEnhance.Sharpness(screenshot)
-    #     factor = 2.0
-    #
-    #     # 增强图片
-    #     img_enhanced = enhancer.enhance(factor)
-    #
-    #     # 保存放大后的截图
-    #     img_enhanced.save(path)
     # 解析图片
     def catch_image_for_price_api(self, code):
         # 使用easyocr 识别图片中文本内容

@@ -1,7 +1,6 @@
 import jqktrader
-from jqktrader import grid_strategies
 import jiaogedan
-import alert
+import tdx_module
 
 
 # 同花顺交易接口封装
@@ -69,7 +68,7 @@ class Ths(object):
     # 卖出
     def sell(self):
         # 取消所有买入卖出委托，重新挂单
-        self.quxiao()
+        self.cancel_all_entrusts()
         # 清空卖出记录
         jiaogedan.Jiaogedan().clear_sell()
         self.user.refresh()
@@ -128,70 +127,46 @@ class Ths(object):
             # 获取股票数量
             shares = item['可用余额']
             # 亏损 》-3 直接卖
-            if available > 0 and item['盈亏比例(%)']<-3 :
+            if available > 0 and item['盈亏比例(%)'] < -3:
 
                 if not jiaogedan.Jiaogedan().is_selled(code):
                     # 卖出
                     self.user.sell(code, price, shares)
                     jiaogedan.Jiaogedan().record_sell(code)
             # 亏损《-3 保本卖
-            elif available > 0 and item['盈亏比例(%)']> -3 and chengben > price:
+            elif available > 0 and item['盈亏比例(%)'] > -3 and chengben > price:
 
                 if not jiaogedan.Jiaogedan().is_selled(code):
                     # 卖出
-                    self.user.sell(code, chengben+0.1, shares)
+                    self.user.sell(code, chengben + 0.1, shares)
                     jiaogedan.Jiaogedan().record_sell(code)
             # 有盈利
-            elif available > 0 and item['盈亏比例(%)'] > 3 :
+            elif available > 0 and item['盈亏比例(%)'] > 3:
                 if not jiaogedan.Jiaogedan().is_selled(code):
                     # 卖出
                     self.user.sell(code, price, shares)
                     jiaogedan.Jiaogedan().record_sell(code)
 
-
     # 获取资金信息
-    def zijin(self):
+    def balance(self):
         self.user.refresh()
         self.user.grid_strategy = jqktrader.grid_strategies.Xls()
         po = self.user.balance
         print(f"资金信息：{po}")
 
-
     # 获取当日委托
-    def weituo(self):
+    def entrust(self):
         self.user.refresh()
         self.user.grid_strategy = jqktrader.grid_strategies.Xls()
         po = self.user.entrust
         print(f"当日委托：{po}")
+
     # 取消所有委托
-    def quxiao(self):
+    def cancel_all_entrusts(self):
         self.user.refresh()
         # self.user.grid_strategy = jqktrader.grid_strategies.Xls()
         po = self.user.cancel_all_entrusts()
         print(f"取消所有委托：{po}")
-
-    # 获取当日成交
-    def chengjiao(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.deal
-        print(f"当日成交：{po}")
-
-
-    def calculate_buying_fee(self, price, quantity):
-        # 计算买入手续费
-        commission_rate = 0.0003  # 佣金费率
-        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
-        return commission
-
-
-    def calculate_selling_fee(self, price, quantity):
-        # 计算卖出手续费
-        commission_rate = 0.0003  # 佣金费率
-        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
-        tax_rate = 0.001  # 印花税费率
-        tax = price * quantity * tax_rate  # 印花税
-        return commission + tax
 
 
 if __name__ == '__main__':

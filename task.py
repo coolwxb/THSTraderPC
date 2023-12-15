@@ -1,5 +1,4 @@
 import jiaogedan
-import yingkui
 
 
 # 每日任务
@@ -8,7 +7,6 @@ import yingkui
 class Task(object):
     def __init__(self):
         self.__jiaogedan = jiaogedan.Jiaogedan()
-        self.__yingkui = yingkui.Yingkui()
     # 单例模式
     def __new__(cls, *args, **kwargs):
         if not hasattr(Task, "_instance"):

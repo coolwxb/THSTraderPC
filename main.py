@@ -2,10 +2,13 @@ import os
 import sched
 import time
 import datetime
-
+import msg
+import numpy as np
 import requests
+from PIL import ImageGrab
+from easyocr import easyocr
 
-import alert
+import tdx_module
 import ths
 import pandas as pd
 import re
@@ -13,19 +16,13 @@ import re
 import ticket
 import jiaogedan as jg
 
-conceptMap = {} # 概念
+conceptMap = {}  # 概念
 # 近期热门行业
 recentIndustryConceptList = []
 
 
-# 解析新增内容的方法，获取第一列作为股票代码
-def parse_content(content):
-    columns = content.split('\t')
-    stock_code = columns[0]
-    return stock_code
-
 # 判断时间
-def is_time_to_sell(hour,minute):
+def is_time_to_sell(hour, minute):
     current_time = datetime.datetime.now().time()
     target_time = datetime.time(hour, minute)  # 目标时间下午2点50分
     if current_time.hour == target_time.hour and current_time.minute == target_time.minute:
@@ -33,103 +30,83 @@ def is_time_to_sell(hour,minute):
     else:
         return False
 
-# 向钉钉发送消息
-def send_msg_to_dingtalk(title,content):
-    # 钉钉机器人的Webhook地址，需要替换为实际地址
-    webhook = "https://sctapi.ftqq.com/SCT231940TOqVp5vSDXB0FR6gsLJ1OKqDW.send?title="+title+"&desp="+content
-    requests.get(url=webhook)
-# 监听文件变化的方法
-def watch_file(path):
-    if not os.path.exists(path):
-        # 文件不存在，创建文件
-        with open(path, 'w',encoding="utf-8") as file:
-            pass
-    file = open(path)
-    while True:
 
-        # 示例使用
-        if is_time_to_sell(14,52):
+# 定义监测屏幕范围变量
+screen_rect = (1420, 1, 1420 + 181, 1 + 24)
+# 先前的屏幕截屏
+previous_screen = None
+
+reader = easyocr.Reader(['ch_sim', 'en'])
+
+# 定义已经预警过的code，用来识别是否重复预警
+alert_codes = []
+
+
+# 监控文件变化的方法
+def watch_screen():
+    while True:
+        # 到时间执行
+        if is_time_to_sell(14, 52):
             # 执行卖出操作
             print("当前时间是下午2点50分，执行卖出操作")
             ths.Ths().sell()
             # 清空购买记录
             jg.Jiaogedan().clear_all()
             return
-        elif is_time_to_sell(9,25):
+        elif is_time_to_sell(9, 25):
             # 执行开盘卖出策略
             print("当前时间是下午9点25分，执行卖出操作")
             ths.Ths().open_sell()
-        elif is_time_to_sell(10,55):
+        elif is_time_to_sell(10, 55):
             # 执行开盘卖出策略
             print("当前时间是上午10点55分，取消所有买入操作，重新挂出卖单")
-            ths.Ths().quxiao()
+            ths.Ths().cancel_all_entrusts()
             ths.Ths().open_sell()
+        # 每次截屏前要返回通达信主界面，否则会截取到其他界面
 
-        where = file.tell()
-        line = file.readline()
-        if not line:
-            time.sleep(1)
-            file.seek(where)
-        else:
-            print(line, end='')
-            parsed_code = parse_content(line)
-
-            # 根据优化策略判断是否买入股票
-            # 1、是近期7天热门异动板块概念
-            flag = True
-            # for industry in recentIndustryConceptList:
-            #     if parsed_code in conceptMap:
-            #         if industry in conceptMap[parsed_code]['行业']:
-            #             flag = True
-            #             break
-            # if not flag:
-            #     for concept in recentIndustryConceptList:
-            #         if parsed_code in conceptMap:
-            #             if concept in conceptMap[parsed_code]['概念']:
-            #                 flag = True
-            #                 break
-            if not flag:
-                print(f"{parsed_code}不是近期热门异动板块概念")
-                continue
-            else:
-                # print(f"{parsed_code}是近期热门异动板块概念")
-                price1, price2,price3  = alert.Alert().purple_price(parsed_code)
-                if price1 == 0 and price2==0 and price3==0:
-                    # 超过最大尝试次数仍未获取到非零的price1
-                    # 在这里处理相应逻辑
-                    print(f"获取{parsed_code}的紫色线价格失败")
-                else:
-                    # 处理获取到的price1
-                    # 判断当前价格是否小于紫色线价格
-                    t = ths.Ths()
-                    current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
-                    if current <= price3 and price3!=0:
-                        print(f"{parsed_code} 跌破灰色下价格，不买入")
-                    elif current < price1 and current > price2 and price1!=0 and price2!=0:
-                        t.buy(parsed_code, price2)
-                    elif current < price2 and price2!=0:
-                        t.buy(parsed_code, current)
+        # 监控屏幕变化
+        img = ImageGrab.grab(bbox=screen_rect)
+        screen = np.array(img)
+        if previous_screen is None:
+            previous_screen = screen
+        if not np.array_equal(screen, previous_screen):
+            # 屏幕内容不同
+            infos = reader.readtext(screen)
+            if len(infos) > 0:
+                # 遍历元组数组，打印数据
+                for info in infos:
+                    # 判断code[1] 是否为6位数字
+                    if info[1].isdigit() and len(info[1]) == 6:
+                        parsed_code = info[1]
+                        # 判断 parsed_code 是否遍历过
+                        if parsed_code in alert_codes:
+                            continue
+                        else:
+                            alert_codes.append(parsed_code)
+                        purple_price, gray_up_price, gray_down_price = tdx_module.Alert().purple_price(parsed_code)
+                        if purple_price == 0 and gray_up_price == 0 and gray_down_price == 0:
+                            print(f"获取{parsed_code}的紫色线价格失败")
+                            msg.dingding.send_msg(f"获取{parsed_code}的紫色线价格失败")
+                        else:
+                            # 获取当前价格
+                            t = ths.Ths()
+                            current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
+                            # 对比价格执行买入逻辑
+                            if current <= gray_down_price and gray_down_price != 0:
+                                print(f"{parsed_code} 跌破灰色下价格，不买入")
+                            elif current < purple_price and current > gray_up_price and purple_price != 0 and gray_up_price != 0:
+                                t.buy(parsed_code, gray_up_price)
+                            elif current < gray_up_price and gray_up_price != 0:
+                                t.buy(parsed_code, current)
+                            else:
+                                t.buy(parsed_code, purple_price)
                     else:
-                        t.buy(parsed_code,price1)
-
-
-
+                        # 解析错误code 发送消息
+                        msg.dingding.send_msg(f"监控屏幕，出现错误code：{info[1]}")
 
 
 if __name__ == '__main__':
-    # 读取概念信息
-    df = pd.read_excel('股票行业、板块信息.xlsx',converters={'代码': str})
-    conceptMap = df.set_index('代码').T.to_dict()
-    # 将热点板块信息读取到内存
-    # f = open("recent_industry_concept.txt",encoding='utf-8')
-    # recentIndustryConceptList = f.read().splitlines()
-    # f.close()
-
     try:
-        watch_file('预警.txt')
+        watch_screen()
     except Exception:
-        send_msg_to_dingtalk("股票交易自动停止了", "出错了")
-        # send_msg_to_dingtalk("监听报错退出了")
-
-    # 每日下午三点半执行方法
-
+        msg.dingding.send_msg("股票交易报错停止了")
