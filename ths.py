@@ -51,6 +51,9 @@ class Ths(object):
         purchase_amount = min(purchase_amount, available_funds)
         # 计算每次购买的股票数量
         shares_to_purchase = int(purchase_amount / stock_price / shares_per_purchase) * shares_per_purchase
+        if shares_to_purchase== 0 and shares_per_purchase* stock_price > purchase_amount:
+            shares_to_purchase = 100
+
         # shares_to_purchase = 100
         # 打印购买的股票数量和金额
         print(f"购买股票数量: {shares_to_purchase}")

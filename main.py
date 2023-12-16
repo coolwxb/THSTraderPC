@@ -6,12 +6,14 @@ import datetime
 import requests
 
 import alert
+import mss
 import ths
 import pandas as pd
 import re
 
 import ticket
 import jiaogedan as jg
+import mss
 
 conceptMap = {} # 概念
 # 近期热门行业
@@ -20,7 +22,7 @@ recentIndustryConceptList = []
 
 # 解析新增内容的方法，获取第一列作为股票代码
 def parse_content(content):
-    columns = content.split('\t')
+    columns = content.split(' ')
     stock_code = columns[0]
     return stock_code
 
@@ -64,53 +66,44 @@ def watch_file(path):
             print("当前时间是上午10点55分，取消所有买入操作，重新挂出卖单")
             ths.Ths().quxiao()
             ths.Ths().open_sell()
+            return
+        # 将代码复制到预警里
+        # mss.call_tdx_alert()
 
         where = file.tell()
         line = file.readline()
         if not line:
-            time.sleep(1)
+            time.sleep(5)
             file.seek(where)
+            mss.call_tdx_alert()
         else:
             print(line, end='')
             parsed_code = parse_content(line)
-
-            # 根据优化策略判断是否买入股票
-            # 1、是近期7天热门异动板块概念
-            flag = True
-            # for industry in recentIndustryConceptList:
-            #     if parsed_code in conceptMap:
-            #         if industry in conceptMap[parsed_code]['行业']:
-            #             flag = True
-            #             break
-            # if not flag:
-            #     for concept in recentIndustryConceptList:
-            #         if parsed_code in conceptMap:
-            #             if concept in conceptMap[parsed_code]['概念']:
-            #                 flag = True
-            #                 break
-            if not flag:
-                print(f"{parsed_code}不是近期热门异动板块概念")
+            if len(parsed_code)!=6:
+                print(f"{parsed_code} code 错误")
                 continue
             else:
-                # print(f"{parsed_code}是近期热门异动板块概念")
-                price1, price2,price3  = alert.Alert().purple_price(parsed_code)
-                if price1 == 0 and price2==0 and price3==0:
+                print(parsed_code+"-----")
+                print(f"{parsed_code}是近期热门异动板块概念")
+                purple_price, gray_price_up,gray_price_down  = alert.Alert().purple_price(parsed_code)
+                if purple_price == 0 and gray_price_up==0 and gray_price_down==0:
                     # 超过最大尝试次数仍未获取到非零的price1
                     # 在这里处理相应逻辑
                     print(f"获取{parsed_code}的紫色线价格失败")
                 else:
+                    pass
                     # 处理获取到的price1
                     # 判断当前价格是否小于紫色线价格
                     t = ths.Ths()
-                    current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
-                    if current <= price3 and price3!=0:
-                        print(f"{parsed_code} 跌破灰色下价格，不买入")
-                    elif current < price1 and current > price2 and price1!=0 and price2!=0:
-                        t.buy(parsed_code, price2)
-                    elif current < price2 and price2!=0:
+                    current = ticket.TicketInfo().get_stock_individual_info_em(parsed_code)
+                    if current <= gray_price_down and gray_price_down!=0:
+                        t.buy(parsed_code, current)
+                    elif current < purple_price and current > gray_price_up and purple_price!=0 and gray_price_up!=0:
+                        t.buy(parsed_code, gray_price_up)
+                    elif current < gray_price_up and gray_price_up!=0:
                         t.buy(parsed_code, current)
                     else:
-                        t.buy(parsed_code,price1)
+                        t.buy(parsed_code,purple_price)
 
 
 
@@ -118,8 +111,8 @@ def watch_file(path):
 
 if __name__ == '__main__':
     # 读取概念信息
-    df = pd.read_excel('股票行业、板块信息.xlsx',converters={'代码': str})
-    conceptMap = df.set_index('代码').T.to_dict()
+    # df = pd.read_excel('股票行业、板块信息.xlsx',converters={'代码': str})
+    # conceptMap = df.set_index('代码').T.to_dict()
     # 将热点板块信息读取到内存
     # f = open("recent_industry_concept.txt",encoding='utf-8')
     # recentIndustryConceptList = f.read().splitlines()

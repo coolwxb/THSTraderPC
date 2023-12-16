@@ -3,32 +3,36 @@ import time
 import pywinauto
 import pyautogui
 import easyocr
-from pywinauto import keyboard
-from pywinauto import findwindows
+
+
 import re
 import baidu_ocr
+import mss
 
 
 class Alert(object):
     '''
     通达信预警后执行买入策略
     '''
-    def __init__(self):
-        self.__app = pywinauto.Application(backend='uia').connect(path = r'E:\tdx\tdx\tdxw.exe')
-        # self.__app = pywinauto.Application(backend='uia').connect(process=13388)
+    # def __init__(self):
+    #     self.__app = pywinauto.Application(backend='uia').connect(path = r'C:\Users\changjing.ai\Desktop\dxgr\HZDataLoader.exe')
+        # self.__app = pywinauto.Application(backend='uia').connect(process=46748)
     # 监控预警调用查询股票紫色线价格
     def purple_price(self,code):
         # 遍历当前所有窗标题，找到标题包含埋伏主升浪战法的窗口
         # w = self.__app.windows()[0]
-        handles = findwindows.find_windows(process=self.__app.process)
-        w = self.__app.window(handle=handles[0])
-        time.sleep(0.5)
-        # 将窗口置顶
-        w.set_focus()
+        # handles = findwindows.find_windows(process=self.__app.process)
+        # w = self.__app.window(handle=handles[0])
+        # time.sleep(0.5)
+        # # 将窗口置顶
+        # w.set_focus()
+        mss.click_soft()
+
 
         # 使用pyweinauto 模拟键盘输入code
-        keyboard.send_keys(code)
-        keyboard.send_keys('{ENTER}')
+        pywinauto.keyboard.send_keys(code)
+        # keyboard.send_keys(code)
+        pywinauto.keyboard.send_keys('{ENTER}')
         # 等待1秒
         time.sleep(1)
         # ocr 截取指定区域图片，解析图片中文本内容
