@@ -14,12 +14,14 @@ def click_soft():
     fix = pyautogui.pixelMatchesColor(16, 5, (242, 0, 0))
     if not fix:
         pyautogui.click(456, 1060)
+    time.sleep(1)
 
 
 # 进入紫色线预警模块
 def enter_zsxyj():
     pywinauto.keyboard.send_keys("zsxyj")
     pywinauto.keyboard.send_keys("{ENTER}")
+    time.sleep(0.5)
 
 # ctl+a 复制所有代码
 def copy_all_code():

@@ -34,11 +34,11 @@ class Alert(object):
         # keyboard.send_keys(code)
         pywinauto.keyboard.send_keys('{ENTER}')
         # 等待1秒
-        time.sleep(1)
+        time.sleep(1.5)
         # ocr 截取指定区域图片，解析图片中文本内容
-        p1 = pyautogui.screenshot(f'pic/{code}.png', region=(1000, 42, 500, 30))
+        p1 = pyautogui.screenshot(f'pic/{code}.png', region=(900, 42, 600, 30))
         # self.scalePic(p1,f'pic/{code}.png')
-        p2 = pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
+        # p2 = pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
         # self.scalePic(p2, f'pic/{code}-concept.png')
         max_attempts = 3
         attempt = 1
@@ -181,4 +181,5 @@ class Alert(object):
 if __name__ == '__main__':
     # w = pywinauto.Application(backend='uia').connect(path = r'E:\【埋伏主升浪战法】【涨停倍量阴突破战法】二合一版本（免安装版）0807\【埋伏主升浪战法】【涨停倍量阴突破战法】二合一版本（免安装版）\tdxw.exe')
     # print(w.windows()[0].window_text())
-    Alert().purple_price('600300')
+    # Alert().purple_price('600300')
+    Alert().catch_image_for_price_local('000524')
