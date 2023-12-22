@@ -1,12 +1,18 @@
+import time
+from datetime import datetime, timedelta
+
 import jqktrader
 from jqktrader import grid_strategies
 import jiaogedan
 import alert
+import akshare as ak
 
 
 # 同花顺交易接口封装
 class Ths(object):
-    def __init__(self):
+    def __init__(self, shared_lock):
+        self.lock = shared_lock
+        self.open_position_flag = True
         self.user = jqktrader.use()
         self.user.connect(
             exe_path=r'E:\同花顺软件\同花顺\xiadan.exe',
@@ -19,12 +25,6 @@ class Ths(object):
             Ths._instance = object.__new__(cls)
         return Ths._instance
 
-    # 获取持仓信息
-    def chicang(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.position
-        print(f"持仓信息：{po}")
 
     # 买入
     def buy(self, code, price):
@@ -51,7 +51,7 @@ class Ths(object):
         purchase_amount = min(purchase_amount, available_funds)
         # 计算每次购买的股票数量
         shares_to_purchase = int(purchase_amount / stock_price / shares_per_purchase) * shares_per_purchase
-        if shares_to_purchase== 0 and shares_per_purchase* stock_price > purchase_amount:
+        if shares_to_purchase == 0 and shares_per_purchase * stock_price > purchase_amount:
             shares_to_purchase = 100
 
         # shares_to_purchase = 100
@@ -68,128 +68,121 @@ class Ths(object):
                 print(f"买入失败,{code},{e}")
         else:
             print(f"没有足够的资金购买股票,{code}")
+    def open_position(self):
+        if self.open_position_flag:
+            with self.lock:
+                self.open_position_flag = False
+                self.user.refresh()
+                self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+                po = self.user.position
+                print(f"持仓信息：{po}")
+                # 对持仓信息进行遍历
+                for item in po:
+                    # 获取股票可用余额
+                    available = item['可用余额']
+                    if available > 0:
+                        self.dictmap[item['证券代码']] = item
 
-    # 卖出
-    def sell(self):
-        # 取消所有买入卖出委托，重新挂单
-        self.quxiao()
-        # 清空卖出记录
-        jiaogedan.Jiaogedan().clear_sell()
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.position
+        # 卖出策略
 
-        print(f"持仓信息：{po}")
-        # 对持仓信息进行遍历
-        for item in po:
-            # 获取股票可用余额
-            available = item['可用余额']
-            if available > 0:
-                # 判断股票盈亏比例（%） 大于3%卖出
-                if item['盈亏比例(%)'] > 3:
-                    # 获取股票代码
-                    code = item['证券代码']
-                    # 获取股票价格
-                    price = item['市价']
+    def sell_strategy(self):
+        while True:
+            with self.lock:
+                self.user.refresh()
+                self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+                po = self.user.position
+                for item in po:
                     # 获取股票数量
                     shares = item['可用余额']
-                    if not jiaogedan.Jiaogedan().is_selled(code):
-                        # 卖出
-                        self.user.sell(code, price, shares)
-                        jiaogedan.Jiaogedan().record_sell(code)
-                # 判断股票盈亏比例（%） 小于-3%卖出
-                elif item['盈亏比例(%)'] < -3:
-                    # 获取股票代码
-                    code = item['证券代码']
+                    if shares == 0:
+                        continue
                     # 获取股票价格
                     price = item['市价']
-                    # 获取股票数量
-                    shares = item['可用余额']
+                    open_item = self.dictmap[item['证券代码']]
+                    open_yingli = open_item["盈亏"]
+                    now_yingli = item["盈亏"]
+                    open_yingkui_ratio = open_item['盈亏比例(%)']
+                    now_yingkui_ratio = item['盈亏比例(%)']
+                    code = item['证券代码']
+                    # 获取昨日最低价
+                    # 获取当前日期时间对象
+                    now = datetime.now()
+                    # 扣除一天以获取昨日日期
+                    yesterday = now - timedelta(days=1)
+                    # 格式化日期
+                    formatted_yesterday = yesterday.strftime('%Y%m%d')
+
+                    allTicketdf = ak.stock_zh_a_hist(symbol=code, period="daily", start_date=formatted_yesterday,
+                                                     end_date=formatted_yesterday,
+                                                     adjust="qfq")
+                    low_price = allTicketdf.iloc[0]['最低']
+                    zhangdiefu = allTicketdf.iloc[0]['涨跌幅']
                     if not jiaogedan.Jiaogedan().is_selled(code):
-                        # 卖出
-                        self.user.sell(code, price, shares)
-                        jiaogedan.Jiaogedan().record_sell(code)
-        pass
+                        # 曾经盈利的股票，下跌到只赚100元时候无脑卖出
+                        if (open_yingli > 0 and open_yingli > 100) and now_yingli < 100:
+                            # 卖出
+                            self.user.sell(code, price, shares)
+                            jiaogedan.Jiaogedan().record_sell(code)
+                        # 曾经盈利的股票，出现亏损100元时候无脑卖出
+                        elif open_yingli > 0 and now_yingli < -100:
+                            # 卖出
+                            self.user.sell(code, price, shares)
+                            jiaogedan.Jiaogedan().record_sell(code)
+                        # 曾经盈利的股票，出现亏损3%时候无脑卖出
+                        elif now_yingkui_ratio < -2.5:
+                            # 卖出
+                            self.user.sell(code, price, shares)
+                            jiaogedan.Jiaogedan().record_sell(code)
+                        # 跌破买入当天最低价，无脑卖出
+                        elif item['市价'] < low_price:
+                            # 卖出
+                            self.user.sell(code, price, shares)
+                            jiaogedan.Jiaogedan().record_sell(code)
+                        # 利润回撤2个点，无脑卖出
+                        elif open_yingkui_ratio > 0 and (
+                                open_yingkui_ratio - 2 > open_yingkui_ratio + now_yingkui_ratio):
+                            # 卖出
+                            self.user.sell(code, price, shares)
+                            jiaogedan.Jiaogedan().record_sell(code)
+                        # 利润超过8个点，并且当日未涨停，无脑卖出
+                        elif now_yingkui_ratio > 8 and zhangdiefu < 9.5:
+                            # 卖出
+                            self.user.sell(code, price, shares)
+                            jiaogedan.Jiaogedan().record_sell(code)
 
-    # 开盘卖出
-    def open_sell(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.position
-
-        print(f"持仓信息：{po}")
-        # 对持仓信息进行遍历
-        for item in po:
-            # 获取股票可用余额
-            available = item['可用余额']
-            # 获取股票价格
-            price = item['市价']
-            # 获取股票价格
-            chengben = item['成本价']
-            # 获取股票代码
-            code = item['证券代码']
-            # 获取股票数量
-            shares = item['可用余额']
-            # 亏损 》-3 直接卖
-            if available > 0 and item['盈亏比例(%)']<-3 :
-                    # 卖出
-                self.user.sell(code, price, shares)
-                jiaogedan.Jiaogedan().record_sell(code)
-            # 亏损《-3 保本卖
-            elif available > 0 and item['盈亏比例(%)']> -3 and chengben > price:
-                    # 卖出
-                self.user.sell(code, chengben+0.1, shares)
-                jiaogedan.Jiaogedan().record_sell(code)
-            # 有盈利
-            elif available > 0 and item['盈亏比例(%)'] > 3 :
-                    # 卖出
-                self.user.sell(code, price, shares)
-                jiaogedan.Jiaogedan().record_sell(code)
+            time.sleep(100)
 
 
-    # 获取资金信息
-    def zijin(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.balance
-        print(f"资金信息：{po}")
-
-
-    # 获取当日委托
-    def weituo(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.entrust
-        print(f"当日委托：{po}")
     # 取消所有委托
     def quxiao(self):
-        self.user.refresh()
-        # self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.cancel_all_entrusts()
-        print(f"取消所有委托：{po}")
-
-    # 获取当日成交
-    def chengjiao(self):
-        self.user.refresh()
-        self.user.grid_strategy = jqktrader.grid_strategies.Xls()
-        po = self.user.deal
-        print(f"当日成交：{po}")
+        with self.lock:
+            self.user.refresh()
+            po = self.user.cancel_all_entrusts()
+            print(f"取消所有委托：{po}")
 
 
-    def calculate_buying_fee(self, price, quantity):
-        # 计算买入手续费
-        commission_rate = 0.0003  # 佣金费率
-        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
-        return commission
+# 获取当日成交
+def chengjiao(self):
+    self.user.refresh()
+    self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+    po = self.user.deal
+    print(f"当日成交：{po}")
 
 
-    def calculate_selling_fee(self, price, quantity):
-        # 计算卖出手续费
-        commission_rate = 0.0003  # 佣金费率
-        commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
-        tax_rate = 0.001  # 印花税费率
-        tax = price * quantity * tax_rate  # 印花税
-        return commission + tax
+def calculate_buying_fee(self, price, quantity):
+    # 计算买入手续费
+    commission_rate = 0.0003  # 佣金费率
+    commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
+    return commission
+
+
+def calculate_selling_fee(self, price, quantity):
+    # 计算卖出手续费
+    commission_rate = 0.0003  # 佣金费率
+    commission = max(5, price * quantity * commission_rate)  # 佣金最低收费5元
+    tax_rate = 0.001  # 印花税费率
+    tax = price * quantity * tax_rate  # 印花税
+    return commission + tax
 
 
 if __name__ == '__main__':

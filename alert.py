@@ -4,94 +4,77 @@ import pywinauto
 import pyautogui
 import easyocr
 
-
 import re
 import baidu_ocr
-import mss
 
 
 class Alert(object):
+    def __init__(self, shared_lock):
+        self.lock = shared_lock
+
     '''
     通达信预警后执行买入策略
     '''
+
     # def __init__(self):
     #     self.__app = pywinauto.Application(backend='uia').connect(path = r'C:\Users\changjing.ai\Desktop\dxgr\HZDataLoader.exe')
-        # self.__app = pywinauto.Application(backend='uia').connect(process=46748)
+    # self.__app = pywinauto.Application(backend='uia').connect(process=46748)
     # 监控预警调用查询股票紫色线价格
-    def purple_price(self,code):
-        # 遍历当前所有窗标题，找到标题包含埋伏主升浪战法的窗口
-        # w = self.__app.windows()[0]
-        # handles = findwindows.find_windows(process=self.__app.process)
-        # w = self.__app.window(handle=handles[0])
-        # time.sleep(0.5)
-        # # 将窗口置顶
-        # w.set_focus()
-        mss.click_soft()
-
-
-        # 使用pyweinauto 模拟键盘输入code
-        pywinauto.keyboard.send_keys(code)
-        # keyboard.send_keys(code)
-        pywinauto.keyboard.send_keys('{ENTER}')
-        # 等待1秒
-        time.sleep(1)
-        # ocr 截取指定区域图片，解析图片中文本内容
-        p1 = pyautogui.screenshot(f'pic/{code}.png', region=(900, 42, 600, 30))
-        # self.scalePic(p1,f'pic/{code}.png')
-        # p2 = pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
-        # self.scalePic(p2, f'pic/{code}-concept.png')
-        max_attempts = 3
-        attempt = 1
-        while attempt <= max_attempts:
-            price1, price2 ,price3 = self.catch_image_for_price_local(code)
-            if price1 != 0:
-                break
-            else:
-                price1, price2, price3 = self.catch_image_for_price_api(code)
-                if price1 != 0:
+    def purple_price(self, code):
+        with self.lock:
+            # 遍历当前所有窗标题，找到标题包含埋伏主升浪战法的窗口
+            # w = self.__app.windows()[0]
+            # handles = findwindows.find_windows(process=self.__app.process)
+            # w = self.__app.window(handle=handles[0])
+            # time.sleep(0.5)
+            # # 将窗口置顶
+            # w.set_focus()
+            # 使用pyweinauto 模拟键盘输入code
+            pywinauto.keyboard.send_keys(code)
+            # keyboard.send_keys(code)
+            pywinauto.keyboard.send_keys('{ENTER}')
+            # 等待1秒
+            time.sleep(1)
+            # ocr 截取指定区域图片，解析图片中文本内容
+            pyautogui.screenshot(f'pic/{code}.png', region=(900, 42, 600, 30))
+            # self.scalePic(p1,f'pic/{code}.png')
+            # p2 = pyautogui.screenshot(f'pic/{code}-concept.png', region=(0, 940, 1400, 30))
+            # self.scalePic(p2, f'pic/{code}-concept.png')
+            max_attempts = 3
+            attempt = 1
+            while attempt <= max_attempts:
+                purple, gray_up, gray_down = self.catch_image_for_price_local(code)
+                if purple != 0:
                     break
-            attempt += 1
-        if price1 == None:
-            if price2>0:
-                price1 = price2
-            elif price3>0:
-                price1 = price3
-            else:
-                price1 = 0
-        if price2 == None:
-            if price3 > 0:
-                price2 = price3
-            elif price1>0:
-                price2 = price1
-            else:
-                price2 = 0
-        if price3 == None:
-            if price2 > 0:
-                price3 = price2
-            elif price1 > 0:
-                price3 = price1
-            else:
-                price3 = 0
+                else:
+                    purple, gray_up, gray_down = self.catch_image_for_price_api(code)
+                    if purple != 0:
+                        break
+                attempt += 1
+            if purple == None:
+                if gray_up > 0:
+                    purple = gray_up
+                elif gray_down > 0:
+                    purple = gray_down
+                else:
+                    purple = 0
+            if gray_up == None:
+                if gray_down > 0:
+                    gray_up = gray_down
+                elif purple > 0:
+                    gray_up = purple
+                else:
+                    gray_up = 0
+            if gray_down == None:
+                if gray_up > 0:
+                    gray_down = gray_up
+                elif purple > 0:
+                    gray_down = purple
+                else:
+                    gray_down = 0
 
-        return price1, price2,price3
-    # def scalePic(self,pic,path):
-    #     # 指定放大倍数
-    #     scale_factor = 2  # 2倍放大，可以根据需要调整
-    #     # 获取截图的宽度和高度
-    #     width, height = pic.size
-    #     # 计算放大后的宽度和高度
-    #     new_width = width * scale_factor
-    #     new_height = height * scale_factor
-    #     #
-    #     screenshot = pic.resize((new_width, new_height), resample=Image.BILINEAR)
-    #     enhancer = ImageEnhance.Sharpness(screenshot)
-    #     factor = 2.0
-    #
-    #     # 增强图片
-    #     img_enhanced = enhancer.enhance(factor)
-    #
-    #     # 保存放大后的截图
-    #     img_enhanced.save(path)
+            return purple, gray_up, gray_down
+
     # 解析图片
     def catch_image_for_price_api(self, code):
         # 使用easyocr 识别图片中文本内容
@@ -101,46 +84,47 @@ class Alert(object):
             # matches = re.findall(r'([\u4e00-\u9fa5]+)：([\d.]+)', result[0][1])
             # print(matches)
 
-            payload = baidu_ocr.get_file_content_as_base64(f'pic/{code}.png',True)
+            payload = baidu_ocr.get_file_content_as_base64(f'pic/{code}.png', True)
             response = baidu_ocr.baidu_ocr(payload)
             if "error_code" in response:
                 print(response["error_msg"])
-                return 0,0,0
+                return 0, 0, 0
             # 使用正则表达式匹配冒号后的数值
-            if "words_result" in response and len(response["words_result"])>0 :
-                for dic in  response["words_result"]:
+            if "words_result" in response and len(response["words_result"]) > 0:
+                for dic in response["words_result"]:
 
-                 if "words" in dic:
-                    p = dic['words']
-                    matches = re.findall(r'(\w+)：([\d+\.\d+]+)',p)
-                    # 构建字典，按照元组的第一个元素作为键，第二个元素作为值
-                    result = {key: value for key, value in matches}
-                    v1 = 0
-                    v2 = 0
-                    v3 = 0
-                    # 遍历result
-                    for k in result:
-                        if "紫实线" in k:
-                            v1 = result.get(k)
-                        elif "灰上" in k:
-                            v2 = result.get(k)
-                        elif "灰下" in k:
-                            v3 = result.get(k)
-
-                    print(f'{code},紫实线：{v1}，灰上：{v2},灰下：{v3}')
-                    if v1==None:
+                    if "words" in dic:
+                        p = dic['words']
+                        matches = re.findall(r'(\w+)：([\d+\.\d+]+)', p)
+                        # 构建字典，按照元组的第一个元素作为键，第二个元素作为值
+                        result = {key: value for key, value in matches}
                         v1 = 0
-                    if v2==None:
                         v2 = 0
-                    if v3==None:
                         v3 = 0
-                    # 返回紫实线的数值
-                    return float(v1),float(v2),float(v3)
+                        # 遍历result
+                        for k in result:
+                            if "紫实线" in k:
+                                v1 = result.get(k)
+                            elif "灰上" in k:
+                                v2 = result.get(k)
+                            elif "灰下" in k:
+                                v3 = result.get(k)
+
+                        print(f'{code},紫实线：{v1}，灰上：{v2},灰下：{v3}')
+                        if v1 == None:
+                            v1 = 0
+                        if v2 == None:
+                            v2 = 0
+                        if v3 == None:
+                            v3 = 0
+                        # 返回紫实线的数值
+                        return float(v1), float(v2), float(v3)
             if "error_msg" in response:
                 print(f"百度识别ocr报错： {response['error_msg']}")
         except Exception as e:
             print(e)
-            return 0,0,0
+            return 0, 0, 0
+
     def catch_image_for_price_local(self, code):
         # 使用easyocr 识别图片中文本内容
         reader = easyocr.Reader(['ch_sim', 'en'])
@@ -175,7 +159,7 @@ class Alert(object):
             return float(v1), float(v2), float(v3)
         except Exception as e:
             print(e)
-            return 0,0,0
+            return 0, 0, 0
 
 
 if __name__ == '__main__':
