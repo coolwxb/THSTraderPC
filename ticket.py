@@ -81,7 +81,10 @@ class TicketInfo(object):
         today = datetime.now().strftime("%Y%m%d")
         # 可当做查询实时股票价格
         allTicketdf = ak.stock_zh_a_hist(symbol=code, period="daily", start_date=today,end_date=today, adjust="qfq")
-        return allTicketdf.at[0,'收盘']
+        if allTicketdf.empty==0:
+            return 0
+        else:
+            return allTicketdf.at[0,'收盘']
 
 
 class TicketDetailInfo(object):
@@ -111,5 +114,5 @@ class TicketDetailInfo(object):
 
 
 if __name__ == '__main__':
-    print(TicketInfo().get_realtime_ticket_info("603096"))
-    # TicketInfo().export_industry_concept_xlsx()
+    # print(TicketInfo().get_realtime_ticket_info("603096"))
+    TicketInfo().export_industry_concept_xlsx()

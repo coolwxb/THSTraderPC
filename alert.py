@@ -34,7 +34,7 @@ class Alert(object):
         # keyboard.send_keys(code)
         pywinauto.keyboard.send_keys('{ENTER}')
         # 等待1秒
-        time.sleep(1.5)
+        time.sleep(1)
         # ocr 截取指定区域图片，解析图片中文本内容
         p1 = pyautogui.screenshot(f'pic/{code}.png', region=(900, 42, 600, 30))
         # self.scalePic(p1,f'pic/{code}.png')

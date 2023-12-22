@@ -3,6 +3,7 @@ import os
 import datetime
 import requests
 import alert
+import rule
 import ths
 import time
 import ticket
@@ -69,13 +70,14 @@ def watch_file(path):
         elif is_time_to_sell(9,25):
             # 执行开盘卖出策略
             print("当前时间是下午9点25分，执行卖出操作")
+            jg.Jiaogedan().clear_sell()
             ths.Ths().open_sell()
-        elif is_time_to_sell(10,50):
+        elif is_time_to_sell(11,50):
             # 执行开盘卖出策略
             print("当前时间是上午10点55分，取消所有买入操作，重新挂出卖单")
             ths.Ths().quxiao()
+            jg.Jiaogedan().clear_sell()
             ths.Ths().open_sell()
-            return
         elif is_deal_time():
             where = file.tell()
             line = file.readline()
@@ -90,23 +92,26 @@ def watch_file(path):
                     print(f"{parsed_code} code 错误")
                     continue
                 else:
-
-                    purple_price, gray_price_up,gray_price_down  = alert.Alert().purple_price(parsed_code)
-                    if purple_price == 0 and gray_price_up==0 and gray_price_down==0:
-                        # 超过最大尝试次数仍未获取到非零的price1
-                        # 在这里处理相应逻辑
-                        print(f"获取{parsed_code}的紫色线价格失败")
-                    else:
-                        t = ths.Ths()
-                        current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
-                        if current <= gray_price_down and gray_price_down!=0:
-                            t.buy(parsed_code, current)
-                        elif current < purple_price and current > gray_price_up and purple_price!=0 and gray_price_up!=0:
-                            t.buy(parsed_code, gray_price_up)
-                        elif current < gray_price_up and gray_price_up!=0:
-                            t.buy(parsed_code, current)
+                    if rule.fitTicket(parsed_code):
+                        purple_price, gray_price_up,gray_price_down  = alert.Alert().purple_price(parsed_code)
+                        if purple_price == 0 and gray_price_up==0 and gray_price_down==0:
+                            # 超过最大尝试次数仍未获取到非零的price1
+                            # 在这里处理相应逻辑
+                            print(f"获取{parsed_code}的紫色线价格失败")
                         else:
-                            t.buy(parsed_code,purple_price)
+
+                            t = ths.Ths()
+                            current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
+                            if current==0:
+                                continue
+                            if current <= gray_price_down and gray_price_down!=0:
+                                t.buy(parsed_code, current)
+                            elif current < purple_price and current > gray_price_up and purple_price!=0 and gray_price_up!=0:
+                                t.buy(parsed_code, gray_price_up)
+                            elif current < gray_price_up and gray_price_up!=0:
+                                t.buy(parsed_code, current)
+                            else:
+                                t.buy(parsed_code,purple_price)
 
 
 if __name__ == '__main__':
