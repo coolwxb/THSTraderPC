@@ -17,7 +17,7 @@ recentIndustryConceptList = []
 # 创建一个共享的锁
 shared_lock = threading.Lock()
 
-mssObj = mss(sahred_lock=shared_lock)
+mssObj = mss.Mss(shared_lock=shared_lock)
 alertObj = alert.Alert(shared_lock=shared_lock)
 thsObj = ths.Ths(shared_lock=shared_lock)
 
@@ -55,7 +55,6 @@ def watch_file(path, share_lock):
             pass
     file = open(path)
     while True:
-
         if is_time_to_sell(10, 45):
             # 执行开盘卖出策略
             print("当前时间是上午10点55分，取消所有挂单")
@@ -105,13 +104,15 @@ if __name__ == '__main__':
     # recentIndustryConceptList = f.read().splitlines()
     # f.close()
 
-    t1 = threading.Thread(watch_file('预警.txt'))
-    t1.start()
-    t1.join()
+    # t1 = threading.Thread(watch_file('预警.txt',shared_lock))
+    # t1.start()
+
 
     thsObj.open_position()
     t2 = threading.Thread(thsObj.sell_strategy())
     t2.start()
+
+    # t1.join()
     t2.join()
 
     # try:

@@ -5,7 +5,7 @@ import jqktrader
 from jqktrader import grid_strategies
 import jiaogedan
 import alert
-import akshare as ak
+import akshare
 
 
 # 同花顺交易接口封装
@@ -13,6 +13,7 @@ class Ths(object):
     def __init__(self, shared_lock):
         self.lock = shared_lock
         self.open_position_flag = True
+        self.dictmap = {}
         self.user = jqktrader.use()
         self.user.connect(
             exe_path=r'E:\同花顺软件\同花顺\xiadan.exe',
@@ -73,7 +74,7 @@ class Ths(object):
             with self.lock:
                 self.open_position_flag = False
                 self.user.refresh()
-                self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+                self.user.grid_strategy = jqktrader.grid_strategies.WMCopy()
                 po = self.user.position
                 print(f"持仓信息：{po}")
                 # 对持仓信息进行遍历
@@ -89,7 +90,7 @@ class Ths(object):
         while True:
             with self.lock:
                 self.user.refresh()
-                self.user.grid_strategy = jqktrader.grid_strategies.Xls()
+                self.user.grid_strategy = jqktrader.grid_strategies.WMCopy()
                 po = self.user.position
                 for item in po:
                     # 获取股票数量
@@ -111,12 +112,18 @@ class Ths(object):
                     yesterday = now - timedelta(days=1)
                     # 格式化日期
                     formatted_yesterday = yesterday.strftime('%Y%m%d')
+                    now = datetime.now()
+                    # 扣除一天以获取昨日日期
+                    yesterday = now - timedelta(days=1)
+                    # 格式化日期
+                    formatted_yesterday = yesterday.strftime('%Y%m%d')
 
-                    allTicketdf = ak.stock_zh_a_hist(symbol=code, period="daily", start_date=formatted_yesterday,
+                    allTicketdf = akshare.stock_zh_a_hist(symbol="603967", period="daily", start_date=formatted_yesterday,
                                                      end_date=formatted_yesterday,
                                                      adjust="qfq")
                     low_price = allTicketdf.iloc[0]['最低']
                     zhangdiefu = allTicketdf.iloc[0]['涨跌幅']
+                    print(low_price, zhangdiefu)
                     if not jiaogedan.Jiaogedan().is_selled(code):
                         # 曾经盈利的股票，下跌到只赚100元时候无脑卖出
                         if (open_yingli > 0 and open_yingli > 100) and now_yingli < 100:
@@ -186,4 +193,5 @@ def calculate_selling_fee(self, price, quantity):
 
 
 if __name__ == '__main__':
-    Ths().sell()
+    pass
+    # Ths().sell()
