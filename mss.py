@@ -36,17 +36,17 @@ class Mss:
         pyautogui.click(1062, 589)
         time.sleep(0.5)
         # 点击批量标记
-        pyautogui.moveTo(1035, 396)
-        pyautogui.click(1035, 396)
+        pyautogui.moveTo(1061, 394)
+        pyautogui.click(1061, 394)
         time.sleep(0.5)
         # 点击复制到剪贴板
-        pyautogui.moveTo(1068, 825)
-        pyautogui.click(1068, 825)
+        pyautogui.moveTo(1085, 765)
+        pyautogui.click(1085, 765)
 
         time.sleep(0.5)
         # 点击关闭
-        pyautogui.moveTo(1065, 730)
-        pyautogui.click(1065, 730)
+        pyautogui.moveTo(1100, 294)
+        pyautogui.click(1100, 294)
         # 将粘贴板内容复制到预警文档里
         with open("预警.txt", 'w') as f:
             f.write('')

@@ -7,9 +7,11 @@ import jiaogedan
 import alert
 import akshare
 
+import xline
+
 
 # 同花顺交易接口封装
-class Ths(object):
+class Ths:
     def __init__(self, shared_lock):
         self.lock = shared_lock
         self.open_position_flag = True
@@ -21,10 +23,6 @@ class Ths(object):
         )
 
     # 单例模式
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(Ths, "_instance"):
-            Ths._instance = object.__new__(cls)
-        return Ths._instance
 
 
     # 买入
@@ -105,59 +103,67 @@ class Ths(object):
                     open_yingkui_ratio = open_item['盈亏比例(%)']
                     now_yingkui_ratio = item['盈亏比例(%)']
                     code = item['证券代码']
-                    # 获取昨日最低价
-                    # 获取当前日期时间对象
-                    now = datetime.now()
-                    # 扣除一天以获取昨日日期
-                    yesterday = now - timedelta(days=1)
-                    # 格式化日期
-                    formatted_yesterday = yesterday.strftime('%Y%m%d')
-                    now = datetime.now()
-                    # 扣除一天以获取昨日日期
-                    yesterday = now - timedelta(days=1)
-                    # 格式化日期
-                    formatted_yesterday = yesterday.strftime('%Y%m%d')
 
-                    allTicketdf = akshare.stock_zh_a_hist(symbol="603967", period="daily", start_date=formatted_yesterday,
-                                                     end_date=formatted_yesterday,
-                                                     adjust="qfq")
-                    low_price = allTicketdf.iloc[0]['最低']
-                    zhangdiefu = allTicketdf.iloc[0]['涨跌幅']
-                    print(low_price, zhangdiefu)
-                    if not jiaogedan.Jiaogedan().is_selled(code):
-                        # 曾经盈利的股票，下跌到只赚100元时候无脑卖出
-                        if (open_yingli > 0 and open_yingli > 100) and now_yingli < 100:
-                            # 卖出
-                            self.user.sell(code, price, shares)
-                            jiaogedan.Jiaogedan().record_sell(code)
-                        # 曾经盈利的股票，出现亏损100元时候无脑卖出
-                        elif open_yingli > 0 and now_yingli < -100:
-                            # 卖出
-                            self.user.sell(code, price, shares)
-                            jiaogedan.Jiaogedan().record_sell(code)
-                        # 曾经盈利的股票，出现亏损3%时候无脑卖出
-                        elif now_yingkui_ratio < -2.5:
-                            # 卖出
-                            self.user.sell(code, price, shares)
-                            jiaogedan.Jiaogedan().record_sell(code)
-                        # 跌破买入当天最低价，无脑卖出
-                        elif item['市价'] < low_price:
-                            # 卖出
-                            self.user.sell(code, price, shares)
-                            jiaogedan.Jiaogedan().record_sell(code)
-                        # 利润回撤2个点，无脑卖出
-                        elif open_yingkui_ratio > 0 and (
-                                open_yingkui_ratio - 2 > open_yingkui_ratio + now_yingkui_ratio):
-                            # 卖出
-                            self.user.sell(code, price, shares)
-                            jiaogedan.Jiaogedan().record_sell(code)
-                        # 利润超过8个点，并且当日未涨停，无脑卖出
-                        elif now_yingkui_ratio > 8 and zhangdiefu < 9.5:
-                            # 卖出
-                            self.user.sell(code, price, shares)
-                            jiaogedan.Jiaogedan().record_sell(code)
+                    # 利用x线判断涨幅
+                    if xline.X_line(code):
+                        print(f"{code}当前价格低于X线，执行卖出操作")
+                        self.user.sell(code, price, shares)
+                        jiaogedan.Jiaogedan().record_sell(code)
+                    else:
+                        # 获取昨日最低价
+                        # 获取当前日期时间对象
+                        now = datetime.now()
+                        # 扣除一天以获取昨日日期
+                        yesterday = now - timedelta(days=1)
+                        # 格式化日期
+                        formatted_yesterday = yesterday.strftime('%Y%m%d')
+                        now = datetime.now()
+                        # 扣除一天以获取昨日日期
+                        yesterday = now - timedelta(days=1)
+                        # 格式化日期
+                        formatted_yesterday = yesterday.strftime('%Y%m%d')
 
-            time.sleep(100)
+                        allTicketdf = akshare.stock_zh_a_hist(symbol=code, period="daily",
+                                                              start_date=formatted_yesterday,
+                                                              end_date=formatted_yesterday,
+                                                              adjust="qfq")
+                        low_price = allTicketdf.iloc[0]['最低']
+                        zhangdiefu = allTicketdf.iloc[0]['涨跌幅']
+
+                        if not jiaogedan.Jiaogedan().is_selled(code):
+                            # 曾经盈利的股票，下跌到只赚100元时候无脑卖出
+                            if (open_yingli > 0 and open_yingli > 100) and now_yingli < 100:
+                                # 卖出
+                                self.user.sell(code, price, shares)
+                                jiaogedan.Jiaogedan().record_sell(code)
+                            # 曾经盈利的股票，出现亏损100元时候无脑卖出
+                            elif open_yingli > 0 and now_yingli < -100:
+                                # 卖出
+                                self.user.sell(code, price, shares)
+                                jiaogedan.Jiaogedan().record_sell(code)
+                            # 曾经盈利的股票，出现亏损3%时候无脑卖出
+                            elif now_yingkui_ratio < -2.5:
+                                # 卖出
+                                self.user.sell(code, price, shares)
+                                jiaogedan.Jiaogedan().record_sell(code)
+                            # 跌破买入当天最低价，无脑卖出
+                            elif item['市价'] < low_price:
+                                # 卖出
+                                self.user.sell(code, price, shares)
+                                jiaogedan.Jiaogedan().record_sell(code)
+                            # 利润回撤2个点，无脑卖出
+                            elif open_yingkui_ratio > 0 and (
+                                    open_yingkui_ratio - 2 > open_yingkui_ratio + now_yingkui_ratio):
+                                # 卖出
+                                self.user.sell(code, price, shares)
+                                jiaogedan.Jiaogedan().record_sell(code)
+                            # 利润超过8个点，并且当日未涨停，无脑卖出
+                            elif now_yingkui_ratio > 8 and zhangdiefu < 9.5:
+                                # 卖出
+                                self.user.sell(code, price, shares)
+                                jiaogedan.Jiaogedan().record_sell(code)
+            time.sleep(40)
+            print("执行卖出策略")
 
 
     # 取消所有委托

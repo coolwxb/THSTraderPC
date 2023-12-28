@@ -2,29 +2,32 @@ import akshare as ak
 import pandas as pd
 import datetime
 
+
 def fitTicket(stock_code):
-    try:
-        df = getTicetDf(stock_code)
-        flag1 = calculate_increase(df, 35)
-        flag2 = check_long_shadow_after_limit_up(df)
-        flag3 = has_consecutive_limit_up(df)
-        if flag3 == False and flag2 == False and flag1 == False:
-            return True
-        else:
-            print("不符合低吸条件")
-    except Exception as e:
-        print(stock_code)
-        print(e)
+    print(f"开始分析{stock_code}")
+    df = getTicetDf(stock_code)
+    flag1 = calculate_increase(df, 35)
+    flag2 = check_long_shadow_after_limit_up(df)
+    flag3 = has_consecutive_limit_up(df)
+    if flag3 == False and flag2 == False and flag1 == False:
+        print("符合低吸条件")
+        return True
+    else:
+        print("不符合低吸条件")
+
+
 def getTicetDf(stock_code):
     now = datetime.date.today().strftime('%Y%m%d')
     start_date = pd.to_datetime(now) - pd.Timedelta(days=30)
     formatted_start_date = start_date.strftime('%Y%m%d')
-    stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol=stock_code, period="daily", start_date=formatted_start_date,adjust="qfq")
+    stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol=stock_code, period="daily", start_date="20231101",
+                                            end_date="20231228", adjust="qfq")
+
     return stock_zh_a_hist_df
+
 
 # 计算涨幅
 def calculate_increase(stock_zh_a_hist_df, increase_range):
-
     # 确保DataFrame按日期排序
     stock_zh_a_hist_df['日期'] = pd.to_datetime(stock_zh_a_hist_df['日期'])
     stock_zh_a_hist_df.sort_values(by='日期', inplace=True)
@@ -54,7 +57,8 @@ def calculate_increase(stock_zh_a_hist_df, increase_range):
 
     # 最终结果
     if max_increase_low_date and max_increase_high_date:
-        print(f"最低点日期：{max_increase_low_date.strftime('%Y-%m-%d')}, 最高点日期：{max_increase_high_date.strftime('%Y-%m-%d')}, 涨幅：{max_increase:.2f}%")
+        print(
+            f"最低点日期：{max_increase_low_date.strftime('%Y-%m-%d')}, 最高点日期：{max_increase_high_date.strftime('%Y-%m-%d')}, 涨幅：{max_increase:.2f}%")
         if max_increase > increase_range:
             print(f"累计涨幅超过{increase_range}%,达到{max_increase}%")
         else:
@@ -63,6 +67,7 @@ def calculate_increase(stock_zh_a_hist_df, increase_range):
     else:
         print(f"1、累计涨幅不超过{increase_range}%")
         return False
+
 
 # 检查涨停板之后的两个交易日是否出现长柱阴线
 def check_long_shadow_after_limit_up(stock_data):
@@ -96,7 +101,6 @@ def check_long_shadow_after_limit_up(stock_data):
     # print("2、未出现墓碑形态")
     # return False
     # start_date 前推6天的日期
-
 
     # 设置涨停板幅度
     limit_up_ratio = 9.7  # 假设涨停板为10%
@@ -137,6 +141,7 @@ def check_long_shadow_after_limit_up(stock_data):
     print("2、未发现高开墓碑")
     return False
 
+
 # 是否有连续涨停
 def has_consecutive_limit_up(stock_zh_a_hist_df):
     # 提取收盘价
@@ -167,4 +172,4 @@ def has_consecutive_limit_up(stock_zh_a_hist_df):
     return False
 
 # df = getTicetDf("600697")
-fitTicket("600697")
+# fitTicket("600697")
