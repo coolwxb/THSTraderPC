@@ -3,6 +3,9 @@ from datetime import datetime, timedelta
 import akshare as ak
 import pandas as pd
 
+import msg.dingding
+
+
 # 交易实现判断X线
 def X_line(code):
     now = datetime.now()
@@ -40,6 +43,7 @@ def X_line(code):
     # 如果没有找到比昨日更低的交易日，则没有可比较的射线
     if not slopes:
         print("没有低于昨日最低价的交易日。")
+        msg.dingding.send_msg("没有低于昨日最低价的交易日。")
     else:
         # 从所有斜率中找到最低射线的斜率（最负的斜率）
         lowest_slope, lowest_slope_date, sub_price, delta_days, ori_price = min(slopes, key=lambda x: x[0])
@@ -50,10 +54,13 @@ def X_line(code):
         actual_fourteenth_low = nowdf['最低']
         print(f'{code}实时最低价格是：{actual_fourteenth_low:.2f}，预期最低价格是：{expected_fourteenth_low:.2f}')
 
+
         # 比较第14个交易日的最低价是否低于通过选出最低射线预测的最低价
         if actual_fourteenth_low < expected_fourteenth_low:
             print(f"交易日的最低价低于昨日最低射线预期值（射线预期值: {expected_fourteenth_low:.2f}）")
+            msg.dingding.send_msg(f"{code}的价格 {actual_fourteenth_low} 低于昨日最低射线预期值（射线预期值: {expected_fourteenth_low:.2f}）")
             return True
         else:
             print(f"交易日的最低价高于昨日最低射线预期值（射线预期值: {expected_fourteenth_low:.2f}）")
+            msg.dingding.send_msg(f"{code}的价格 {actual_fourteenth_low} 高于昨日最低射线预期值（射线预期值: {expected_fourteenth_low:.2f}）")
             return False

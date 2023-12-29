@@ -7,6 +7,7 @@ import jiaogedan
 import alert
 import akshare
 
+import msg.dingding
 import xline
 
 
@@ -98,6 +99,7 @@ class Ths:
                     # 获取股票价格
                     price = item['市价']
                     open_item = self.dictmap[item['证券代码']]
+                    stock_name = self.dictmap[item['证券名称']]
                     open_yingli = open_item["盈亏"]
                     now_yingli = item["盈亏"]
                     open_yingkui_ratio = open_item['盈亏比例(%)']
@@ -106,7 +108,8 @@ class Ths:
 
                     # 利用x线判断涨幅
                     if xline.X_line(code):
-                        print(f"{code}当前价格低于X线，执行卖出操作")
+                        print(f"{code} {stock_name}当前价格低于X线，执行卖出操作")
+                        msg.dingding.send_msg(f"{code}:{stock_name} 当前价格低于X线，执行卖出操作")
                         self.user.sell(code, price, shares)
                         jiaogedan.Jiaogedan().record_sell(code)
                     else:
@@ -136,33 +139,39 @@ class Ths:
                                 # 卖出
                                 self.user.sell(code, price, shares)
                                 jiaogedan.Jiaogedan().record_sell(code)
+                                msg.dingding.send_msg(f"{code}:{stock_name} 曾经盈利的股票，下跌到只赚100元时候无脑卖出")
                             # 曾经盈利的股票，出现亏损100元时候无脑卖出
                             elif open_yingli > 0 and now_yingli < -100:
                                 # 卖出
                                 self.user.sell(code, price, shares)
                                 jiaogedan.Jiaogedan().record_sell(code)
+                                msg.dingding.send_msg(f"{code}:{stock_name} 曾经盈利的股票，出现亏损100元时候无脑卖出")
                             # 曾经盈利的股票，出现亏损3%时候无脑卖出
                             elif now_yingkui_ratio < -2.5:
                                 # 卖出
                                 self.user.sell(code, price, shares)
                                 jiaogedan.Jiaogedan().record_sell(code)
+                                msg.dingding.send_msg(f"{code}:{stock_name} 曾经盈利的股票，出现亏损3%时候无脑卖出")
                             # 跌破买入当天最低价，无脑卖出
                             elif item['市价'] < low_price:
                                 # 卖出
                                 self.user.sell(code, price, shares)
                                 jiaogedan.Jiaogedan().record_sell(code)
+                                msg.dingding.send_msg(f"{code}:{stock_name} 跌破买入当天最低价，无脑卖出")
                             # 利润回撤2个点，无脑卖出
                             elif open_yingkui_ratio > 0 and (
                                     open_yingkui_ratio - 2 > open_yingkui_ratio + now_yingkui_ratio):
                                 # 卖出
                                 self.user.sell(code, price, shares)
                                 jiaogedan.Jiaogedan().record_sell(code)
+                                msg.dingding.send_msg(f"{code}:{stock_name} 利润回撤2个点，无脑卖出")
                             # 利润超过8个点，并且当日未涨停，无脑卖出
                             elif now_yingkui_ratio > 8 and zhangdiefu < 9.5:
                                 # 卖出
                                 self.user.sell(code, price, shares)
                                 jiaogedan.Jiaogedan().record_sell(code)
-            time.sleep(40)
+                                msg.dingding.send_msg(f"{code}:{stock_name} 利润超过8个点，并且当日未涨停，无脑卖出")
+
             print("执行卖出策略")
 
 
@@ -172,6 +181,7 @@ class Ths:
             self.user.refresh()
             po = self.user.cancel_all_entrusts()
             print(f"取消所有委托：{po}")
+            msg.dingding.send_msg(f"{po}")
 
 
 # 获取当日成交

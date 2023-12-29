@@ -32,21 +32,20 @@ class Mss:
         pywinauto.keyboard.send_keys("^A")
         # 点击全选中
         pyautogui.moveTo(1062, 589)
-        time.sleep(0.5)
         pyautogui.click(1062, 589)
         time.sleep(0.5)
         # 点击批量标记
         pyautogui.moveTo(1061, 394)
         pyautogui.click(1061, 394)
-        time.sleep(0.5)
-        # 点击复制到剪贴板
-        pyautogui.moveTo(1085, 765)
-        pyautogui.click(1085, 765)
 
+        # 点击复制到剪贴板
+        pyautogui.moveTo(1097, 827)
+        pyautogui.click(1097, 827)
         time.sleep(0.5)
         # 点击关闭
-        pyautogui.moveTo(1100, 294)
-        pyautogui.click(1100, 294)
+        pyautogui.moveTo(1065, 730)
+        time.sleep(3)
+        pyautogui.click(1065, 730)
         # 将粘贴板内容复制到预警文档里
         with open("预警.txt", 'w') as f:
             f.write('')

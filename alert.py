@@ -47,8 +47,8 @@ class Alert(object):
             if purple != 0:
                 break
             else:
-                purple, gray_up, gray_down = self.catch_image_for_price_api(code)
-                if purple != 0:
+             purple_up, purple, gray_up, gray_down = self.catch_image_for_price_local(code)
+             if purple != 0:
                     break
             attempt += 1
         if purple == None:
@@ -73,7 +73,7 @@ class Alert(object):
             else:
                 gray_down = 0
 
-        return purple, gray_up, gray_down
+        return purple_up, purple, gray_up, gray_down
 
     # 解析图片
     def catch_image_for_price_api(self, code):

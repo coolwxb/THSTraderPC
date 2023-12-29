@@ -2,18 +2,22 @@ import akshare as ak
 import pandas as pd
 import datetime
 
+import msg.dingding
+
 
 def fitTicket(stock_code):
-    print(f"开始分析{stock_code}")
+    msg.dingding.send_msg(f"开始分析{stock_code}")
     df = getTicetDf(stock_code)
     flag1 = calculate_increase(df, 35)
     flag2 = check_long_shadow_after_limit_up(df)
     flag3 = has_consecutive_limit_up(df)
     if flag3 == False and flag2 == False and flag1 == False:
         print("符合低吸条件")
+        msg.dingding.send_msg("符合低吸条件")
         return True
     else:
         print("不符合低吸条件")
+        msg.dingding.send_msg("不符合低吸条件")
 
 
 def getTicetDf(stock_code):
@@ -61,11 +65,14 @@ def calculate_increase(stock_zh_a_hist_df, increase_range):
             f"最低点日期：{max_increase_low_date.strftime('%Y-%m-%d')}, 最高点日期：{max_increase_high_date.strftime('%Y-%m-%d')}, 涨幅：{max_increase:.2f}%")
         if max_increase > increase_range:
             print(f"累计涨幅超过{increase_range}%,达到{max_increase}%")
+            msg.dingding.send_msg(f"累计涨幅超过{increase_range}%,达到{max_increase}%")
         else:
             print(f"1、累计涨幅不超过{increase_range}%")
+            msg.dingding.send_msg(f"1、累计涨幅不超过{increase_range}%")
         return False
     else:
         print(f"1、累计涨幅不超过{increase_range}%")
+        msg.dingding.send_msg(f"1、累计涨幅不超过{increase_range}%")
         return False
 
 
@@ -137,8 +144,10 @@ def check_long_shadow_after_limit_up(stock_data):
                     if daily_range > 0 and (candle_body_length / daily_range) >= long_candle_body_ratio:
                         date = stock_data.iloc[j]['日期']
                         print(f"发现长柱阴线实体: 涨停板日期 {stock_data.iloc[i]['日期']}，长柱阴线日期 {date}")
+                        msg.dingding.send_msg(f"发现长柱阴线实体: 涨停板日期 {stock_data.iloc[i]['日期']}，长柱阴线日期 {date}")
                         return True
     print("2、未发现高开墓碑")
+    msg.dingding.send_msg("2、未发现高开墓碑")
     return False
 
 
@@ -157,6 +166,7 @@ def has_consecutive_limit_up(stock_zh_a_hist_df):
             consecutive_days_10 += 1
             if consecutive_days_10 >= 3:  # 连续两天或以上
                 print("连续3天存在涨停")
+                msg.dingding.send_msg("连续3天存在涨停")
                 return True
         else:
             consecutive_days_10 = 0
@@ -165,10 +175,12 @@ def has_consecutive_limit_up(stock_zh_a_hist_df):
             consecutive_days_20 += 1
             if consecutive_days_20 >= 3:  # 连续两天或以上
                 print("连续3天存在涨停")
+                msg.dingding.send_msg("连续3天存在涨停")
                 return True
         else:
             consecutive_days_20 = 0
     print("3、未出现3日连续涨停")
+    msg.dingding.send_msg("3、未出现3日连续涨停")
     return False
 
 # df = getTicetDf("600697")
