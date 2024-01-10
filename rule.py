@@ -8,7 +8,7 @@ import msg.dingding
 def fitTicket(stock_code):
     msg.dingding.send_msg(f"开始分析{stock_code}")
     df = getTicetDf(stock_code)
-    flag1 = calculate_increase(df, 35)
+    flag1 = calculate_increase(df, 55)
     flag2 = check_long_shadow_after_limit_up(df)
     flag3 = has_consecutive_limit_up(df)
     if flag3 == False and flag2 == False and flag1 == False:
@@ -22,10 +22,10 @@ def fitTicket(stock_code):
 
 def getTicetDf(stock_code):
     now = datetime.date.today().strftime('%Y%m%d')
-    start_date = pd.to_datetime(now) - pd.Timedelta(days=30)
+    start_date = pd.to_datetime(now) - pd.Timedelta(days=20)
     formatted_start_date = start_date.strftime('%Y%m%d')
-    stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol=stock_code, period="daily", start_date="20231101",
-                                            end_date="20231228", adjust="qfq")
+    stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol=stock_code, period="daily", start_date=formatted_start_date,
+                                            end_date=now, adjust="qfq")
 
     return stock_zh_a_hist_df
 

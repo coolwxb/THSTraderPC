@@ -44,13 +44,18 @@ class Mss:
         time.sleep(0.5)
         # 点击关闭
         pyautogui.moveTo(1065, 730)
-        time.sleep(3)
+        time.sleep(0.5)
         pyautogui.click(1065, 730)
+        # 防止复制不到发生错误
+        pywinauto.keyboard.send_keys('{ESC}')
+
+        pywinauto.keyboard.send_keys('{ESC}')
         # 将粘贴板内容复制到预警文档里
         with open("预警.txt", 'w') as f:
             f.write('')
             content = pyperclip.paste()
             f.write(content)
+
 
     def call_tdx_alert(self):
         with self.lock:
