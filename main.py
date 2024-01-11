@@ -66,90 +66,93 @@ def is_shoupan():
 
 # 监听文件变化的方法
 def watch_file(path = '预警.txt', share_lock = shared_lock):
-    if not os.path.exists(path):
-        # 文件不存在，创建文件
-        with open(path, 'w', encoding="utf-8") as file:
-            pass
-    while True:
-        if is_time_to_sell(10, 40):
-            # 执行开盘卖出策略
-            print("当前时间是上午10点40分，取消所有挂单")
-            msg.dingding.send_msg(f"当前时间是上午10点40分，取消所有挂单\r\n")
-            thsObj.quxiao()
-            jg.Jiaogedan().clear_sell()
-        elif is_shoupan():
-            j = jg.Jiaogedan()
-            j.clear_all()
-            with open('预警.txt', 'w', encoding="utf-8") as f:
-                f.write('')
-            return
-        elif is_deal_time():
-            mssObj.call_tdx_alert()
-            with open(path, 'r') as file:
-                lines = file.readlines()
-            for line_s in lines:
-                # 使用 rstrip 方法去除末尾的换行符 \n
-                line = line_s.rstrip('\n')
-                if line=="":
-                    continue
-                if line in current_stocks:
-                    continue
-                else:
-                    current_stocks[line] = line
-                    if line =="":
+    try:
+        if not os.path.exists(path):
+            # 文件不存在，创建文件
+            with open(path, 'w', encoding="utf-8") as file:
+                pass
+        while True:
+            if is_time_to_sell(10, 40):
+                # 执行开盘卖出策略
+                print("当前时间是上午10点40分，取消所有挂单")
+                msg.dingding.send_msg(f"当前时间是上午10点40分，取消所有挂单\r\n")
+                thsObj.quxiao()
+                jg.Jiaogedan().clear_sell()
+            elif is_shoupan():
+                j = jg.Jiaogedan()
+                j.clear_all()
+                with open('预警.txt', 'w', encoding="utf-8") as f:
+                    f.write('')
+                return
+            elif is_deal_time():
+                mssObj.call_tdx_alert()
+                with open(path, 'r') as file:
+                    lines = file.readlines()
+                for line_s in lines:
+                    # 使用 rstrip 方法去除末尾的换行符 \n
+                    line = line_s.rstrip('\n')
+                    if line == "":
+                        continue
+                    if line in current_stocks:
                         continue
                     else:
-                        parsed_code, stock_name = parse_content(line)
-                        if len(parsed_code) != 6:
-                            print(f"{parsed_code} {stock_name} code 错误")
+                        current_stocks[line] = line
+                        if line == "":
                             continue
                         else:
-                            if rule.fitTicket(parsed_code) and recent_high.is_recent_high(parsed_code):
-                                # 判断是否是近期热点
-                                flag = True
-                                if not flag:
-                                    print(f"f{parsed_code}  {stock_name}不是近期热点")
-                                else:
-                                    with share_lock:
-                                        mssObj.click_soft()
-                                        purple_up, purple_price, gray_price_up, gray_price_down = alertObj.purple_price(
-                                            parsed_code)
-                                        if purple_price == 0 and gray_price_up == 0 and gray_price_down == 0:
-                                            # 超过最大尝试次数仍未获取到非零的price1
-                                            # 在这里处理相应逻辑
-                                            print(f"获取{parsed_code}  {stock_name}的紫色线价格失败")
-                                            msg.dingding.send_msg(f"获取{parsed_code} {stock_name}的紫色线价格失败")
-                                        elif gray_price_up >= purple_up or gray_price_up >= purple_price:
-                                            print(f"{parsed_code}的灰色线在紫色线上方，不符合强势条件")
-                                            msg.dingding.send_msg(
-                                                f"{parsed_code}  {stock_name} 的灰色线在紫色线上方，不符合强势条件")
-                                        else:
-                                            current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
-                                            print(f"当前{parsed_code}  {stock_name} 价格为{current}")
-                                            # 调查活跃度
-                                            if current == 0:
-                                                continue
-                                            if current <= gray_price_down and gray_price_down != 0:
-                                                thsObj.buy(parsed_code, current)
+                            parsed_code, stock_name = parse_content(line)
+                            if len(parsed_code) != 6:
+                                print(f"{parsed_code} {stock_name} code 错误")
+                                continue
+                            else:
+                                if rule.fitTicket(parsed_code) and recent_high.is_recent_high(parsed_code):
+                                    # 判断是否是近期热点
+                                    flag = True
+                                    if not flag:
+                                        print(f"f{parsed_code}  {stock_name}不是近期热点")
+                                    else:
+                                        with share_lock:
+                                            mssObj.click_soft()
+                                            purple_up, purple_price, gray_price_up, gray_price_down = alertObj.purple_price(
+                                                parsed_code)
+                                            if purple_price == 0 and gray_price_up == 0 and gray_price_down == 0:
+                                                # 超过最大尝试次数仍未获取到非零的price1
+                                                # 在这里处理相应逻辑
+                                                print(f"获取{parsed_code}  {stock_name}的紫色线价格失败")
+                                                msg.dingding.send_msg(f"获取{parsed_code} {stock_name}的紫色线价格失败")
+                                            elif gray_price_up >= purple_up or gray_price_up >= purple_price:
+                                                print(f"{parsed_code}的灰色线在紫色线上方，不符合强势条件")
                                                 msg.dingding.send_msg(
-                                                    f"当前{parsed_code}  {stock_name} 买入价格为{current}")
-                                            elif current < purple_price and current > gray_price_up and purple_price != 0 and gray_price_up != 0:
-                                                thsObj.buy(parsed_code, gray_price_up)
-                                                msg.dingding.send_msg(
-                                                    f"当前{parsed_code}  {stock_name}买入价格为{gray_price_up}")
-                                            elif current < gray_price_up and current > gray_price_down and gray_price_up != 0:
-                                                thsObj.buy(parsed_code, current)
-                                                msg.dingding.send_msg(
-                                                    f"当前{parsed_code}  {stock_name}买入价格为{current}")
-                                            elif current < gray_price_down and gray_price_up != 0:
-                                                thsObj.buy(parsed_code, current)
-                                                msg.dingding.send_msg(
-                                                    f"当前{parsed_code}  {stock_name}买入价格为{current}")
+                                                    f"{parsed_code}  {stock_name} 的灰色线在紫色线上方，不符合强势条件")
                                             else:
-                                                thsObj.buy(parsed_code, purple_price)
-                                                msg.dingding.send_msg(
-                                                    f"当前{parsed_code}  {stock_name}买入价格为{purple_price}")
-        ttime.sleep(2)
+                                                current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
+                                                print(f"当前{parsed_code}  {stock_name} 价格为{current}")
+                                                # 调查活跃度
+                                                if current == 0:
+                                                    continue
+                                                if current <= gray_price_down and gray_price_down != 0:
+                                                    thsObj.buy(parsed_code, current)
+                                                    msg.dingding.send_msg(
+                                                        f"当前{parsed_code}  {stock_name} 买入价格为{current}")
+                                                elif current < purple_price and current > gray_price_up and purple_price != 0 and gray_price_up != 0:
+                                                    thsObj.buy(parsed_code, gray_price_up)
+                                                    msg.dingding.send_msg(
+                                                        f"当前{parsed_code}  {stock_name}买入价格为{gray_price_up}")
+                                                elif current < gray_price_up and current > gray_price_down and gray_price_up != 0:
+                                                    thsObj.buy(parsed_code, current)
+                                                    msg.dingding.send_msg(
+                                                        f"当前{parsed_code}  {stock_name}买入价格为{current}")
+                                                elif current < gray_price_down and gray_price_up != 0:
+                                                    thsObj.buy(parsed_code, current)
+                                                    msg.dingding.send_msg(
+                                                        f"当前{parsed_code}  {stock_name}买入价格为{current}")
+                                                else:
+                                                    thsObj.buy(parsed_code, purple_price)
+                                                    msg.dingding.send_msg(
+                                                        f"当前{parsed_code}  {stock_name}买入价格为{purple_price}")
+            ttime.sleep(2)
+    except Exception as e:
+        raise e
 
 
 
