@@ -3,32 +3,32 @@ import time
 import pywinauto
 import pyautogui
 import easyocr
-
+from pywinauto import keyboard
+from pywinauto import findwindows
 import re
 import baidu_ocr
 
 
 class Alert(object):
-    def __init__(self, shared_lock):
-        self.lock = shared_lock
+    # def __init__(self, shared_lock):
+    #     self.lock = shared_lock
 
     '''
     通达信预警后执行买入策略
     '''
-
-    # def __init__(self):
-    #     self.__app = pywinauto.Application(backend='uia').connect(path = r'C:\Users\changjing.ai\Desktop\dxgr\HZDataLoader.exe')
-    # self.__app = pywinauto.Application(backend='uia').connect(process=46748)
+    def __init__(self,shared_lock):
+        self.lock = shared_lock
+        self.__app = pywinauto.Application(backend='uia').connect(path = r'E:\【埋伏主升浪战法】【涨停倍量阴突破战法】二合一版本（免安装版）\tdxw.exe')
+        # self.__app = pywinauto.Application(backend='uia').connect(process=13388)
     # 监控预警调用查询股票紫色线价格
-    def purple_price(self, code):
-
+    def purple_price(self,code):
         # 遍历当前所有窗标题，找到标题包含埋伏主升浪战法的窗口
         # w = self.__app.windows()[0]
-        # handles = findwindows.find_windows(process=self.__app.process)
-        # w = self.__app.window(handle=handles[0])
-        # time.sleep(0.5)
-        # # 将窗口置顶
-        # w.set_focus()
+        handles = findwindows.find_windows(process=self.__app.process)
+        w = self.__app.window(handle=handles[0])
+        time.sleep(0.5)
+        # 将窗口置顶
+        w.set_focus()
         # 使用pyweinauto 模拟键盘输入code
         pywinauto.keyboard.send_keys(code)
         # keyboard.send_keys(code)

@@ -56,12 +56,10 @@ class Mss:
             content = pyperclip.paste()
             f.write(content)
 
-
     def call_tdx_alert(self):
-        with self.lock:
-            self.click_soft()
-            self.enter_zsxyj()
-            self.copy_all_code()
+        self.click_soft()
+        self.enter_zsxyj()
+        self.copy_all_code()
 
 
 if __name__ == '__main__':
