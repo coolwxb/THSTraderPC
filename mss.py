@@ -23,7 +23,7 @@ class Mss:
 
     # 进入紫色线预警模块
     def enter_zsxyj(self):
-        pywinauto.keyboard.send_keys("zsxyj")
+        pywinauto.keyboard.send_keys("jjzxyj")
         pywinauto.keyboard.send_keys("{ENTER}")
         time.sleep(0.5)
 
@@ -39,8 +39,8 @@ class Mss:
         pyautogui.click(1061, 394)
 
         # 点击复制到剪贴板
-        pyautogui.moveTo(1097, 827)
-        pyautogui.click(1097, 827)
+        pyautogui.moveTo(1106, 763)
+        pyautogui.click(1106, 763)
         time.sleep(0.5)
         # 点击关闭
         pyautogui.moveTo(1065, 730)

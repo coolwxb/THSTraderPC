@@ -26,14 +26,14 @@ current_stocks = {}
 # 创建一个共享的锁
 shared_lock = threading.Lock()
 
-# mssObj = mss.Mss(shared_lock=shared_lock)
+mssObj = mss.Mss(shared_lock=shared_lock)
 alertObj = alert.Alert(shared_lock=shared_lock)
 thsObj = ths.Ths(shared_lock=shared_lock)
 
 
 # 解析新增内容的方法，获取第一列作为股票代码
 def parse_content(content):
-    columns = content.split('\t')
+    columns = content.split(' ')
     if len(columns) >= 2:
         stock_code = columns[0]
         stock_name = columns[1]
@@ -92,12 +92,14 @@ def watch_file(path='预警.txt', share_lock=shared_lock):
                 j.clear_all()
                 with open('预警.txt', 'w', encoding="utf-8") as f:
                     f.write('')
-                share_lock.release()
+                with open('chicang.txt', 'w', encoding="utf-8") as f:
+                    f.write('')
                 return
             elif is_deal_time():
-                # mssObj.call_tdx_alert()
+                mssObj.call_tdx_alert()
                 with open(path, 'r') as file:
                     lines = file.readlines()
+                    print(lines)
                 for line_s in lines:
                     # 使用 rstrip 方法去除末尾的换行符 \n
                     line = line_s.rstrip('\n')
@@ -111,6 +113,8 @@ def watch_file(path='预警.txt', share_lock=shared_lock):
                             continue
                         else:
                             parsed_code, stock_name = parse_content(line)
+                            print(parsed_code,stock_name)
+                            print("===")
                             if len(parsed_code) != 6:
                                 print(f"{parsed_code} {stock_name} code 错误")
                                 continue
@@ -136,7 +140,13 @@ def watch_file(path='预警.txt', share_lock=shared_lock):
                                         else:
                                             current = ticket.TicketInfo().get_realtime_ticket_info(parsed_code)
                                             print(f"当前{parsed_code}  {stock_name} 价格为{current}")
-                                            # 调查活跃度
+                                            # # 调查活跃度
+                                            # if current==0:
+                                            #     continue
+                                            # else:
+                                            #     thsObj.buy(parsed_code, current)
+                                            #     msg.dingding.send_msg(
+                                            #         f"当前{parsed_code}  {stock_name}买入价格为{current}")
                                             if current == 0:
                                                 continue
                                             if current <= gray_price_down and gray_price_down != 0:
