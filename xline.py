@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 import akshare as ak
 import pandas as pd
 
-import msg.dingding
 
 
 # 交易实现判断X线

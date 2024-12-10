@@ -1,11 +1,8 @@
 from datetime import datetime
 
 import akshare as ak
-import pyautogui
 import pandas as pd
-# 获取股票实时信息
-# stock_individual_info_em_df = ak.stock_individual_info_em(symbol="603777")
-# print(stock_individual_info_em_df)
+
 
 class TicketInfo(object):
     # 单例模式
@@ -21,7 +18,7 @@ class TicketInfo(object):
     # 获取股票概念
     def save_stock_concept(self):
         # 获取所有概念
-        stock_concept_df = ak.stock_board_concept_name_ths()
+        stock_concept_df = ak.stock_board_concept_cons_em()
         stock_concept_df.to_excel('概念.xlsx')
 
     def save_all_ticket(self):

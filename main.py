@@ -1,22 +1,22 @@
 import concurrent
 import os
+import sys
 from concurrent.futures.thread import ThreadPoolExecutor
 
 from datetime import datetime, time
 import time as ttime
-import sys
+
 import threading
 
 import alert
+
 import rule
+import ticket
 import ths
 
-import ticket
 import jiaogedan as jg
 import mss
 import msg
-import recent_high
-import akshare as ak
 
 conceptMap = {}  # 概念
 # 近期热门行业
@@ -49,15 +49,20 @@ def is_time_to_sell(hour, minute):
     else:
         return False
 
-
+AM_TRADING_START = time(9, 25, 0)
+AM_TRADING_END = time(11, 30, 0)
+PM_TRADING_START = time(13, 0, 0)
+PM_TRADING_END = time(15, 0, 0)
 # 开盘时间
 def is_deal_time():
-    now = datetime.now()
-    if (now.hour == 9 and now.minute >= 30) or (now.hour == 10 and now.minute <= 40) :
+    now = datetime.now().time()
+    if AM_TRADING_START <= now <= AM_TRADING_END or PM_TRADING_START <= now <= PM_TRADING_END:
         return True
     else:
         return False
     # return True
+
+
 
 
 def is_shoupan():
@@ -68,25 +73,19 @@ def is_shoupan():
         return True
     else:
         return False
+    # return False
 
 
 # 监听文件变化的方法
 def watch_file(path='预警.txt', share_lock=shared_lock):
-    try:
         if not os.path.exists(path):
-            # 文件不存在，创建文件
+            # 文件不存在，创建文件jjjzxyj
             with open(path, 'w', encoding="utf-8") as file:
                 pass
-        while True:
+    # while True:
+        try:
             share_lock.acquire()
             print("watch_file======获取锁")
-            # if is_time_to_sell(10, 40):
-            #     # 执行开盘卖出策略
-            #     print("当前时间是上午10点40分，取消所有挂单")
-            #     msg.dingding.send_msg(f"当前时间是上午10点40分，取消所有挂单\r\n")
-            #     thsObj.quxiao()
-            #     jg.Jiaogedan().clear_sell()
-            # elif is_shoupan():
             if is_shoupan():
                 j = jg.Jiaogedan()
                 j.clear_all()
@@ -94,10 +93,11 @@ def watch_file(path='预警.txt', share_lock=shared_lock):
                     f.write('')
                 with open('chicang.txt', 'w', encoding="utf-8") as f:
                     f.write('')
-                return
+                sys.exit()
+
             elif is_deal_time():
                 mssObj.call_tdx_alert()
-                with open(path, 'r') as file:
+                with open(path, 'r', encoding='utf-8') as file:
                     lines = file.readlines()
                     print(lines)
                 for line_s in lines:
@@ -113,19 +113,23 @@ def watch_file(path='预警.txt', share_lock=shared_lock):
                             continue
                         else:
                             parsed_code, stock_name = parse_content(line)
-                            print(parsed_code,stock_name)
+                            print(parsed_code, stock_name)
                             print("===")
                             if len(parsed_code) != 6:
                                 print(f"{parsed_code} {stock_name} code 错误")
+                                with open('预警.txt', 'w', encoding="utf-8") as f:
+                                    f.write('')
                                 continue
                             else:
-                                # if rule.fitTicket(parsed_code) and recent_high.is_recent_high(parsed_code):
-                                if True:
+                                if rule.fitTicket(parsed_code,stock_name):
+                                    # if True:
                                     # 判断是否是近期热点
                                     flag = True
                                     if not flag:
                                         print(f"f{parsed_code}  {stock_name}不是近期热点")
                                     else:
+                                        mssObj.click_soft()
+                                        ttime.sleep(1)
                                         purple_up, purple_price, gray_price_up, gray_price_down = alertObj.purple_price(
                                             parsed_code)
                                         if purple_price == 0 and gray_price_up == 0 and gray_price_down == 0:
@@ -169,39 +173,55 @@ def watch_file(path='预警.txt', share_lock=shared_lock):
                                                 thsObj.buy(parsed_code, purple_price)
                                                 msg.dingding.send_msg(
                                                     f"当前{parsed_code}  {stock_name}买入价格为{purple_price}")
+            ttime.sleep(5)
+        except Exception as e:
+            print("watch_file 报错")
+            print(e)
+            raise RuntimeError('watch_file Error')
+        finally:
             share_lock.release()
             print("watch_file======释放锁")
-            ttime.sleep(2)
-    except Exception as e:
-        print("watch_file 报错")
-        print(e)
-        raise RuntimeError('watch_file Error')
-    finally:
-        share_lock.release()
-        print("watch_file======释放锁")
-        # ttime.sleep(2)
+
+
+# 启动并管理任务
+def submit_task_with_retry(executor, task_func, retries=5):
+    attempt = 0
+    while attempt < retries:
+        try:
+            # 提交任务到线程池
+            future = executor.submit(task_func)
+            return future.result()  # 获取任务结果，如果任务抛出异常会在这里捕获
+        except Exception as e:
+            attempt += 1
+            print(f"任务失败，重试 {attempt}/{retries} 次，错误: {e}")
+            if attempt >= retries:
+                print("达到最大重试次数，任务失败")
+                return None  # 达到最大重试次数，返回失败
+            ttime.sleep(2)  # 等待一段时间再重试
 
 
 if __name__ == '__main__':
-    # 读取概念信息
-    # try:
-    #     t1 = threading.Thread(target=watch_file)
-    #     t1.start()
-    #     thsObj.open_position()
-    #     t2 = threading.Thread(target=thsObj.sell_strategy)
-    #     t2.start()
-    #     t1.join()
-    #     t2.join()
-    # except Exception as e:
-    #     msg.dingding.send_msg(f"股票交易自动停止了\r\n{e}")
-    #     sys.exit(1)
+
     with ThreadPoolExecutor(max_workers=3) as executor:
+        mssObj.click_trade_soft()
         thsObj.open_position()
-        result_futures = [executor.submit(watch_file), executor.submit(thsObj.sell_strategy)]
-        for future in concurrent.futures.as_completed(result_futures):
+        # result_futures = [executor.submit(watch_file), executor.submit(thsObj.sell_strategy)]
+        # for future in concurrent.futures.as_completed(result_futures):
+        while True:
             try:
-                result = future.result()  # 当子线程中异常时，这里会重新抛出
+
+                watch_file()
+                thsObj.sell_strategy()
+
             except Exception as e:  # 捕获子线程中的异常
                 print('>>> main ThreadPoolExecutor, e: ', e.args)  # 成功捕获异常
-                msg.dingding.send_msg(f"股票交易自动停止了\r\n{e.args}")
-                sys.exit(1)
+                # Decide which task to re-submit based on the exception or failure
+                # if isinstance(e, ValueError):  # Assuming ValueError comes from task 1
+                #     # Re-submit task 1 after failure
+                #     result_futures.append(executor.submit(thsObj.sell_strategy))
+                #     msg.dingding.send_msg(f"自动重启售卖任务\r\n{e.args}")
+                # else:
+                #     # Re-submit task 2 or handle other types of exceptions as needed
+                #     result_futures.append(executor.submit(watch_file()))
+                #     msg.dingding.send_msg(f"自动重启监听买入任务\r\n{e.args}")
+

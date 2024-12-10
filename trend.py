@@ -1,6 +1,6 @@
 import akshare as ak
 import pandas as pd
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
 # 判断趋势是否走坏
@@ -18,8 +18,8 @@ def bad_trend (symbol):
     prices = data["收盘"].tolist()
 
     # 绘制价格连线图
-    # x = np.arange(len(prices))
-    # plt.plot(x, prices)
+    x = np.arange(len(prices))
+    plt.plot(x, prices)
 
     # 初始化变量
     trend = []
@@ -33,7 +33,7 @@ def bad_trend (symbol):
             trend.append(1)  # 上涨趋势
             if first_upward_trend_index == -1:
                 first_upward_trend_index = i  # 记录第一个上涨转折点的索引
-                # plt.plot(x[i], prices[i], 'go', label='第一个上涨转折点')  # 绘制第一个上涨转折点，使用绿色
+                plt.plot(x[i], prices[i], 'go', label='第一个上涨转折点')  # 绘制第一个上涨转折点，使用绿色
             last_upward_trend_index = i  # 更新最后一个上涨转折点的索引
         elif prices[i] < prices[i - 1] and prices[i] < prices[i + 1]:
             trend.append(-1)  # 下跌趋势
@@ -41,12 +41,12 @@ def bad_trend (symbol):
                 lowest_downtrend_index = i  # 更新价格最低的转折点索引
 
 
-    # plt.plot(x[lowest_downtrend_index], prices[lowest_downtrend_index], 'yo', label='下跌趋势价格最低转折点')  # 绘制下跌趋势价格最低转折点，使用黄色
+    plt.plot(x[lowest_downtrend_index], prices[lowest_downtrend_index], 'yo', label='下跌趋势价格最低转折点')  # 绘制下跌趋势价格最低转折点，使用黄色
 
-    # plt.plot(x[last_upward_trend_index], prices[last_upward_trend_index], 'bo', label='最后一个上涨转折点')  # 绘制最后一个上涨转折点，使用蓝色
+    plt.plot(x[last_upward_trend_index], prices[last_upward_trend_index], 'bo', label='最后一个上涨转折点')  # 绘制最后一个上涨转折点，使用蓝色
 
-    # plt.legend()
-    # plt.show()
+    plt.legend()
+    plt.show()
     if (prices[last_upward_trend_index] > prices[first_upward_trend_index]):
         print("当前处于上涨趋势")
         return False;
@@ -71,4 +71,4 @@ def bad_trend (symbol):
             return False
     # 可视化
 
-# bad_trend("002862")
+bad_trend("002865")

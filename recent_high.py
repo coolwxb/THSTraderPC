@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 def is_recent_high(stock_code):
 
-
     # 获取当前日期，并计算过去 30 天的日期
     end_date = datetime.today().strftime('%Y%m%d')
     start_date = (datetime.today() - timedelta(days=30)).strftime('%Y%m%d')

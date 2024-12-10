@@ -8,6 +8,7 @@ header = {"Content-Type": "application/json; charset=utf-8"}
 
 
 def send_msg(content, webhook=webhook):
+    # pass
     data = {
         "msgtype": "text",
         "text": {
